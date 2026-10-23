@@ -1,0 +1,64 @@
+{
+    "name": "rapttor/yii2-legal",
+    "description": "Yii2 extension that publishes legal pages from one company config: terms, privacy, cookies, acceptable use, imprint, refunds, DPA, game rules, app terms and licence, in several languages, with a language switcher, acceptance log, cookie consent and a render archive.",
+    "type": "yii2-extension",
+    "keywords": [
+        "yii2",
+        "yii2-extension",
+        "legal",
+        "privacy-policy",
+        "terms",
+        "gdpr",
+        "cookies",
+        "consent",
+        "i18n"
+    ],
+    "homepage": "https://github.com/rapttor/yii2-legal",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Rapttor",
+            "homepage": "https://rapttor.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/rapttor/yii2-legal/issues",
+        "source": "https://github.com/rapttor/yii2-legal"
+    },
+    "require": {
+        "php": ">=8.2",
+        "yiisoft/yii2": "~2.0.54",
+        "rapttor/legal": "^0.1",
+        "ext-mbstring": "*"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "rapttor\\yii2legal\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "rapttor\\yii2legal\\tests\\": "tests/"
+        }
+    },
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ],
+    "scripts": {
+        "test": "phpunit -c phpunit.xml"
+    },
+    "config": {
+        "allow-plugins": {
+            "yiisoft/yii2-composer": true
+        }
+    },
+    "extra": {
+        "bootstrap": "rapttor\\yii2legal\\Bootstrap"
+    }
+}

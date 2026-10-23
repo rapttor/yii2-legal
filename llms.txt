@@ -1,0 +1,13 @@
+# rapttor/yii2-legal
+
+> Yii2 package: legal pages (terms, privacy, cookies, acceptable use, imprint, refunds, DPA, game rules, app terms, licence) rendered from one company config, with sanitised HTML, language switcher, caching and a render archive. Texts come from rapttor/legal, bundled by Composer, no runtime network access.
+
+Integrating or changing this package: read AGENTS.md first. It lists what to ask the owner, what never to invent, and the promises the legal texts make that the app must keep.
+
+- [AGENTS.md](AGENTS.md): integration steps, rules, promises checklist, how to change the package
+- [README.md](README.md): install, configuration, languages, console commands, safety
+- [src/Legal.php](src/Legal.php): the application component (documents(), html(), markdown(), url(), offered(), languageList(), release(), missing())
+- [src/widgets/LegalLinks.php](src/widgets/LegalLinks.php) and [src/widgets/LanguageSwitcher.php](src/widgets/LanguageSwitcher.php): footer links and language switcher
+- [src/controllers/LegalController.php](src/controllers/LegalController.php): pages, hreflang, fallback notice
+- [tests/LegalTest.php](tests/LegalTest.php): behaviour covered (sanitising, fallback to last good render, languages, routes)
+- Upstream texts and rules: https://github.com/rapttor/rapttor.legal (AGENTS.md, SPEC.md)
