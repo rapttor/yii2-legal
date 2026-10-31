@@ -41,6 +41,7 @@ final class Acceptance
             'release' => 'string(16) NOT NULL',
             'source' => 'string(24) NOT NULL',
             'ip_hash' => 'string(64) NULL',
+            'ua_hash' => 'string(64) NULL',
             'accepted_at' => 'integer NOT NULL',
             'context' => 'text NULL',
         ])->execute();
@@ -68,7 +69,7 @@ final class Acceptance
             }
             $this->db()->createCommand()->insert($this->legal->acceptanceTable, [
                 'user_id' => $userId, 'subject' => $subject, 'document' => $id, 'version' => $d['version'], 'lang' => $d['lang'],
-                'release' => $this->legal->release(), 'source' => $source, 'ip_hash' => $this->ipHash(), 'accepted_at' => time(), 'context' => $context,
+                'release' => $this->legal->release(), 'source' => $source, 'ip_hash' => $this->ipHash(), 'ua_hash' => $this->legal->evidence('')['ua'], 'accepted_at' => time(), 'context' => $context,
             ])->execute();
             $n++;
         }
@@ -123,11 +124,6 @@ final class Acceptance
     /** Keyed hash of the client IP (not reversible without the key). */
     private function ipHash(): ?string
     {
-        $ip = Yii::$app instanceof \yii\web\Application ? Yii::$app->request->getUserIP() : null;
-        if ($ip === null || $ip === '') {
-            return null;
-        }
-        $key = Yii::$app instanceof \yii\web\Application ? (string)Yii::$app->request->cookieValidationKey : '';
-        return hash_hmac('sha256', $ip, $key !== '' ? $key : 'rapttor-legal');
+        return $this->legal->evidence('')['ip'];
     }
 }

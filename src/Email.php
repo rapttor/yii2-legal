@@ -34,11 +34,7 @@ final class Email
 
     private function key(): string
     {
-        $k = $this->legal->secret;
-        if ($k === null && Yii::$app instanceof \yii\web\Application) {
-            $k = (string)Yii::$app->request->cookieValidationKey;
-        }
-        return $k !== null && $k !== '' ? $k : 'rapttor-legal';
+        return $this->legal->hashKey();
     }
 
     public function sign(string $purpose, string $email): string

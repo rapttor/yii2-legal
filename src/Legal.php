@@ -182,6 +182,41 @@ class Legal extends Component
         return $h;
     }
 
+    /** Key for the keyed hashes of IP address and browser details (default: `secret`, else the request cookie validation key). */
+    public function hashKey(): string
+    {
+        $k = $this->secret;
+        if ($k === null && Yii::$app instanceof \yii\web\Application) {
+            $k = (string)Yii::$app->request->cookieValidationKey;
+        }
+        return $k !== null && $k !== '' ? $k : 'rapttor-legal';
+    }
+
+    /** Keyed hash (HMAC-SHA256). Not reversible without the key; same input gives the same hash, so it can be compared later. */
+    public function hash(?string $value): ?string
+    {
+        return $value === null || $value === '' ? null : hash_hmac('sha256', $value, $this->hashKey());
+    }
+
+    /**
+     * What to keep as proof that a person saw and accepted a specific thing. Only hashes of technical data, never the raw values.
+     *
+     * @param string $shownText the exact wording next to the checkbox
+     * @param string|null $documentText the rendered document that was accepted (Markdown), if the item is a document
+     * @return array<string,string|null> ip, ua (hashed IP and browser details), text and doc (SHA-256 of what was shown)
+     */
+    public function evidence(string $shownText, ?string $documentText = null): array
+    {
+        $web = Yii::$app instanceof \yii\web\Application;
+        $req = $web ? Yii::$app->request : null;
+        return [
+            'ip' => $this->hash($req?->getUserIP()),
+            'ua' => $this->hash($req === null ? null : ($req->getUserAgent() . '|' . $req->headers->get('Accept-Language')) ),
+            'text' => hash('sha256', $shownText),
+            'doc' => $documentText === null ? null : hash('sha256', $documentText),
+        ];
+    }
+
     /** The name users know the service by: config product.name, else the company name. */
     public function productName(): string
     {

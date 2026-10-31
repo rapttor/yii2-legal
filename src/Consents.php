@@ -134,28 +134,48 @@ final class Consents
         $cookie = [];
         foreach ($pending as $d) {
             $granted = !empty($answers[$d['key']]);
-            $state[$d['key']] = ['v' => $d['version'], 'granted' => $granted, 'at' => time(), 'lang' => $lang, 'source' => $source];
+            $docText = $d['kind'] === 'document' ? $this->documentText($d['key'], $lang) : null;
+            $entry = ['v' => $d['version'], 'granted' => $granted, 'at' => time(), 'lang' => $lang, 'source' => $source, 'ev' => $this->legal->evidence($d['label'], $docText)];
+            if (isset($state[$d['key']])) { // keep the earlier answers: a person's history of acceptances is the proof in a dispute
+                $old = $state[$d['key']];
+                $history = $old['history'] ?? [];
+                unset($old['history']);
+                $history[] = $old;
+                $entry['history'] = array_slice($history, -20);
+            }
+            $state[$d['key']] = $entry;
             if ($d['kind'] === 'external') {
                 $cookie[$d['key']] = $granted;
             }
         }
         $this->store()->save((string)$userId, $state);
-        $this->logDocuments($userId, $pending, $answers, $lang);
+        $this->logDocuments($userId, $pending, $answers, $lang, $state);
         if ($cookie !== [] && Yii::$app instanceof \yii\web\Application) {
             $this->legal->consent()->merge($cookie); // the browser follows the account's choice for third-party resources
         }
         return ['ok' => true, 'missing' => []];
     }
 
+    /** The rendered Markdown of the document version being accepted (its SHA-256 goes into the evidence). */
+    private function documentText(string $id, string $lang): ?string
+    {
+        try {
+            return $this->legal->markdown($id, $lang);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /** Documents accepted here also go to the acceptance log (version, language, time, hashed IP) when its table exists. */
-    private function logDocuments(int|string $userId, array $pending, array $answers, string $lang): void
+    private function logDocuments(int|string $userId, array $pending, array $answers, string $lang, array $state = []): void
     {
         $docs = array_values(array_map(static fn(array $d): string => $d['key'], array_filter($pending, static fn(array $d): bool => $d['kind'] === 'document' && !empty($answers[$d['key']]))));
         if ($docs === [] || !is_numeric($userId)) {
             return;
         }
         try {
-            $this->legal->acceptance()->record((int)$userId, $docs, 'consents', null, $lang);
+            $ctx = json_encode(['lang' => $lang, 'evidence' => array_map(fn(string $id): array => $state[$id]['ev'] ?? [], array_combine($docs, $docs))], JSON_THROW_ON_ERROR);
+            $this->legal->acceptance()->record((int)$userId, $docs, 'consents', null, $lang, $ctx);
         } catch (\Throwable $e) {
             Yii::warning('Acceptance log not written: ' . $e->getMessage(), __METHOD__);
         }

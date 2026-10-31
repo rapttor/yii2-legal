@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0 (requires rapttor/legal ^2.2)
+- **One checkbox per document**: `AcceptanceCheckbox` renders a separate unticked box for every document and `posted($docs)` is true only if each has its own ticked box (`legal_accept[<doc>]`). A single shared box no longer counts. **Breaking for custom code** that posted `legal_accept=1`.
+- **Proof of acceptance with the user profile**: consent entries now carry `ev` (keyed hashes of IP, browser details and Accept-Language, of the wording shown and of the document text) and `history` (earlier answers, last 20); `legal_acceptance` gets `ua_hash` and the evidence in `context`. New `Legal::evidence()`, `hash()`, `hashKey()`. Run `php yii migrate` (adds `legal_consent.evidence` and `legal_acceptance.ua_hash`).
+
 ## 2.1.0
 - `AcceptanceFilter` (the "we updated our terms" page) is deprecated and now behaves like `ConsentGate`: apps wired with it get the whole checklist, including the age and legal-age confirmation, after updating.
 - Documents accepted in the checklist are also written to the acceptance log.

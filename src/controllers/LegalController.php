@@ -71,7 +71,7 @@ final class LegalController extends Controller
         }
         $error = false;
         if (Yii::$app->request->isPost) {
-            if (\rapttor\yii2legal\widgets\AcceptanceCheckbox::posted()) {
+            if (\rapttor\yii2legal\widgets\AcceptanceCheckbox::posted(array_column($pending, 'id'))) {
                 $legal->acceptance()->record((int)$user->id, array_column($pending, 'id'), 'reaccept');
                 return $this->redirect($return);
             }

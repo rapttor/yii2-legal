@@ -571,4 +571,19 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame('Poštovaću pravila četa.', array_column($legal->consents()->definitions('sr'), null, 'key')['chat_rules']['label']);
         $this->assertTrue($defs['chat_rules']['required']);
     }
+
+    public function testConsentKeepsEvidenceAndHistory(): void
+    {
+        $legal = $this->legal([], [], true, true);
+        $legal->consents()->record(77, ['terms' => '1', 'privacy' => '1', 'age' => '1', 'uploads' => '1'], 'consents', 'en');
+        $s = $legal->consents()->state(77);
+        $this->assertArrayHasKey('ev', $s['terms']);
+        $this->assertSame(64, strlen($s['terms']['ev']['text']), 'hash of the wording shown');
+        $this->assertSame(64, strlen($s['terms']['ev']['doc']), 'hash of the document text');
+        $this->assertNull($s['age']['ev']['doc'], 'only documents have a document hash');
+        $this->assertNotSame($s['terms']['ev']['text'], $s['age']['ev']['text']);
+        $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 77, 'document' => 'terms'])->one();
+        $this->assertStringContainsString('evidence', (string)$row['context']);
+        $this->assertArrayHasKey('ua_hash', $row);
+    }
 }

@@ -75,7 +75,7 @@ Keep proof of who agreed to which version. Run the migration once (`php yii migr
 
 ```php
 // sign-up form
-echo rapttor\yii2legal\widgets\AcceptanceCheckbox::widget();   // "I accept the Terms and the Privacy Policy" (documents: 'acceptDocs', default terms + privacy)
+echo rapttor\yii2legal\widgets\AcceptanceCheckbox::widget();   // one separate unticked box per document, never one shared box (documents: 'acceptDocs', default terms + privacy)
 
 // sign-up action
 if (!rapttor\yii2legal\widgets\AcceptanceCheckbox::posted()) { /* show an error */ }

@@ -92,7 +92,15 @@ final class FeaturesTest extends TestCase
         $this->assertStringContainsString('role="alert"', $out, 'no checkbox: error and nothing recorded');
         $this->assertCount(2, $legal->acceptance()->pending(9));
 
-        Yii::$app->request->setBodyParams(['legal_accept' => '1', 'return' => 'https://evil.test/']);
+        Yii::$app->request->setBodyParams(['legal_accept' => '1', 'return' => '/']);
+        $out = (string)Yii::$app->runAction('legal/accept');
+        $this->assertStringContainsString('role="alert"', $out, 'one bundled box is not accepted');
+        Yii::$app->request->setBodyParams(['legal_accept' => ['terms' => '1'], 'return' => '/']);
+        $out = (string)Yii::$app->runAction('legal/accept');
+        $this->assertStringContainsString('role="alert"', $out, 'every document needs its own box');
+        $this->assertCount(2, $legal->acceptance()->pending(9));
+
+        Yii::$app->request->setBodyParams(['legal_accept' => ['terms' => '1', 'privacy' => '1'], 'return' => 'https://evil.test/']);
         $res = Yii::$app->runAction('legal/accept');
         $this->assertInstanceOf(\yii\web\Response::class, $res);
         $this->assertSame([], $legal->acceptance()->pending(9));

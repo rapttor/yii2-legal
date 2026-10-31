@@ -20,28 +20,42 @@ final class AcceptanceCheckbox extends Widget
     public string $name = 'legal_accept';
     public array $options = ['class' => 'legal-accept'];
 
-    public static function posted(string $name = 'legal_accept'): bool
+    /**
+     * True only when EVERY listed document has its own ticked box. One shared box for several documents does not count:
+     * a person must be able to refuse or later dispute each one separately.
+     *
+     * @param list<string>|null $docs default: the component's `acceptDocs`
+     */
+    public static function posted(?array $docs = null, string $name = 'legal_accept'): bool
     {
-        return Yii::$app->request->post($name) === '1';
+        $docs ??= Yii::$app->get('legal')->acceptDocs;
+        $got = Yii::$app->request->post($name);
+        if (!is_array($got) || $docs === []) {
+            return false;
+        }
+        foreach ($docs as $id) {
+            if (($got[$id] ?? null) !== '1') {
+                return false;
+            }
+        }
+        return true;
     }
 
+    /** One unticked, required checkbox per document, each with its own link and version. */
     public function run(): string
     {
         /** @var Legal $legal */
         $legal = Yii::$app->get('legal');
-        $links = [];
+        $rows = [];
         foreach ($this->docs ?? $legal->acceptDocs as $id) {
             $d = $legal->document($id);
-            if ($d !== null) {
-                $links[] = Html::a(Html::encode($d['title']), $legal->url($id), ['target' => '_blank', 'rel' => 'noopener']);
+            if ($d === null) {
+                continue;
             }
+            $link = Html::a(Html::encode($d['title']), $legal->url($id), ['target' => '_blank', 'rel' => 'noopener']);
+            $label = strtr(Html::encode($legal->t('accept.label')), ['{docs}' => $link]) . ' <small>(' . Html::encode($d['version']) . ')</small>';
+            $rows[] = Html::tag('div', Html::label(Html::checkbox($this->name . '[' . $id . ']', false, ['value' => '1', 'required' => true]) . ' ' . $label), ['class' => 'legal-accept-item']);
         }
-        if ($links === []) {
-            return '';
-        }
-        $sep = Html::encode($legal->t('accept.and'));
-        $list = count($links) > 1 ? implode(', ', array_slice($links, 0, -1)) . $sep . end($links) : $links[0];
-        $label = strtr(Html::encode($legal->t('accept.label')), ['{docs}' => $list]);
-        return Html::tag('div', Html::label(Html::checkbox($this->name, false, ['value' => '1', 'required' => true]) . ' ' . $label), $this->options);
+        return $rows === [] ? '' : Html::tag('div', implode("\n", $rows), $this->options);
     }
 }
