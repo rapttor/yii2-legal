@@ -30,9 +30,11 @@ final class LanguageSwitcher extends Widget
     public bool $sameRoute = false;
     /** Show a flag next to each language name (default: on for same-route forms). Flags stand for countries, not languages: the name is always shown too. */
     public ?bool $flags = null;
+    /** One compact row: flag on top, short language name in small type below (default: on for same-route forms). Scrolls sideways on a narrow screen instead of wrapping. */
+    public ?bool $compact = null;
     /** @var array<string,string> language tag => flag emoji */
     public const FLAGS = [
-        'en' => '🇬🇧', 'sh' => '●', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
+        'en' => '🇬🇧', 'sh' => '⚫', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
         'pt-BR' => '🇧🇷', 'it' => '🇮🇹', 'pl' => '🇵🇱', 'nl' => '🇳🇱', 'tr' => '🇹🇷', 'uk' => '🇺🇦', 'ru' => '🇷🇺', 'ar' => '🇸🇦', 'hi' => '🇮🇳',
         'ja' => '🇯🇵', 'ko' => '🇰🇷', 'zh-Hans' => '🇨🇳',
     ];
@@ -62,13 +64,22 @@ final class LanguageSwitcher extends Widget
         foreach ($list as $l) {
             $has = $doc !== null && $legal->document($doc, $l['tag']) !== null && !$legal->document($doc, $l['tag'])['fallback'];
             $url = $this->sameRoute ? \yii\helpers\Url::current(['lang' => $l['tag']]) : ($doc !== null && $has ? $legal->url($doc, $l['tag']) : $this->indexUrl($legal, $l['tag']));
-            $flag = ($this->flags ?? $this->sameRoute) && isset(self::FLAGS[$l['tag']]) ? '<span aria-hidden="true">' . self::FLAGS[$l['tag']] . '</span> ' : '';
-            $a = Html::a($flag . Html::encode($this->labels[$l['tag']] ?? $l['name']), $url, [
-                'hreflang' => $l['tag'], 'lang' => $l['tag'], 'rel' => 'alternate',
-            ] + ($l['current'] ? ['aria-current' => 'true'] : []));
+            $name = (string)($this->labels[$l['tag']] ?? $l['name']);
+            $flagChar = ($this->flags ?? $this->sameRoute) && isset(self::FLAGS[$l['tag']]) ? self::FLAGS[$l['tag']] : '';
+            $attrs = ['hreflang' => $l['tag'], 'lang' => $l['tag'], 'rel' => 'alternate', 'title' => $name] + ($l['current'] ? ['aria-current' => 'true'] : []);
+            if ($this->compact ?? $this->sameRoute) { // flag on top, short name in small type below: fits many languages in one row
+                $short = trim((string)preg_replace('/\s*\(.*\)/u', '', $name));
+                $attrs['style'] = 'display:flex;flex-direction:column;align-items:center;gap:.1rem;text-decoration:none;min-width:3rem;line-height:1.1;'
+                    . ($l['current'] ? 'font-weight:700;border-bottom:2px solid currentColor;padding-bottom:.15rem' : 'opacity:.8');
+                $a = Html::a('<span aria-hidden="true" style="font-size:1.5rem;line-height:1.2">' . ($flagChar !== '' ? $flagChar : '&#9679;') . '</span><span style="font-size:.65rem;white-space:nowrap">' . Html::encode($short) . '</span>', $url, $attrs);
+            } else {
+                $a = Html::a(($flagChar !== '' ? '<span aria-hidden="true">' . $flagChar . '</span> ' : '') . Html::encode($name), $url, $attrs);
+            }
             $items .= Html::tag('li', $a, $l['current'] ? ['class' => 'is-current'] : []);
         }
-        $options = $this->options + ($this->sameRoute ? ['style' => 'list-style:none;padding:0;margin:0 0 1rem;display:flex;gap:1rem;flex-wrap:wrap'] : []);
+        $options = $this->options + (($this->compact ?? $this->sameRoute)
+            ? ['style' => 'list-style:none;padding:0;margin:0 0 1rem;display:flex;gap:.25rem;flex-wrap:nowrap;justify-content:safe center;overflow-x:auto;scrollbar-width:thin']
+            : []);
         return Html::tag('ul', $items, $options);
     }
 

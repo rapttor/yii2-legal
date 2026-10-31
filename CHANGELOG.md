@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.3
+- **Compact language strip on consent forms**: flag on top, short language name in small type below, one row for all languages (sideways scroll on a narrow screen, never wrapping into several rows); the current language is bold and underlined; Balkan uses a black circle. Option `compact` on `LanguageSwitcher` (default on for `sameRoute`). Put the strip outside a narrow card so all languages fit.
+
 ## 2.8.2 (requires rapttor/legal ^2.6.2)
 - **The age checkbox says "I am of legal age in my country"; the number is only in the small print** (`consent.age` label, level in the hint). Balkan wording per the owner's rules (fajl, dodajem). Balkan switcher entry shows a black dot instead of a flag.
 
