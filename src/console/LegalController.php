@@ -163,7 +163,14 @@ final class LegalController extends Controller
         if ($this->llms) {
             $llms = dirname($file) . '/llms.txt';
             $name = $legal->productName();
-            $this->writeBlock($llms, "# $name\n\n", "> Application using rapttor/yii2-legal. AI coding agents: read " . basename($file) . " before changing anything.\n\n- [" . basename($file) . "](" . basename($file) . "): security and compliance checklist for this app (row-level access, secrets, uploads, consents, third-party resources, email, payments)\n- Legal pages: published from the legal config; `php yii legal/check` must pass\n");
+            $activities = trim((string)($legal->effectiveConfig()['policy']['activities'] ?? '')) ?: 'none set yet';
+            $this->writeBlock($llms, "# $name\n\n", "> Application using rapttor/yii2-legal (legal pages, consents, privacy requests). AI coding agents: read " . basename($file) . " before changing anything.\n\n"
+                . "- [" . basename($file) . "](" . basename($file) . "): security and compliance checklist for this app (row-level access, secrets, uploads, consents, third-party resources, email, payments, requests)\n"
+                . "- Legal pages: published from the legal config (`common/config/legal.php`); `php yii legal/check` must pass\n"
+                . "- Consents: every item is its own unticked checkbox with a short title and small-print hint; new accounts tick them in the sign-in step (`ConsentChecklist`), existing accounts when a version changes (`ConsentGate`); the record is kept in `rapttor_metadata` (`key=legal`)\n"
+                . "- Activities that some countries prohibit (`policy.activities`, now: $activities): see the generated section in " . basename($file) . "; add the tag when a feature needs it\n"
+                . "- Privacy and legal requests: `/legal/request`, alert admins through `Legal::EVENT_REQUEST`, list with `php yii legal/requests`; never promise reply times\n"
+                . "- Languages: use `Yii::\$app->legal->url()` and the language strip; Balkan texts follow rapttor/legal `i18n/BRIEF-sh.md`\n");
             $this->stdout("wrote $llms\n");
         }
         return ExitCode::OK;

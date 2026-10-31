@@ -2,21 +2,20 @@
 
 > Yii2 package for multilingual legal pages, consents and privacy requests, from one company config, in 17 languages with a language switcher: terms, privacy, cookies, imprint, refunds, DPA, game rules, app terms, licence. Also one-checkbox-per-item consents with proof, cookie consent, email stop and block, a privacy request form, and country restrictions per app activity. Texts come from rapttor/legal, bundled by Composer, no runtime network access.
 
-Integrating or changing this package: read AGENTS.md first. It lists what to ask the owner, what never to invent, and the promises the legal texts make that the app must keep.
+Integrating or changing this package: read AGENTS.md first. It lists what to ask the owner, what never to invent, and the promises the legal texts make that the app must keep. In an app that uses it, run `php yii legal/agents --llms` to write the checklist, the activity tags and the country lists into the app's own AGENTS.md and llms.txt.
 
+## Read first
 - [AGENTS.md](AGENTS.md): integration steps, rules, promises checklist, how to change the package
-- [README.md](README.md): install, configuration, languages, console commands, safety
-- [src/Legal.php](src/Legal.php): the application component (documents(), html(), markdown(), url(), offered(), languageList(), release(), missing())
-- [src/widgets/LegalLinks.php](src/widgets/LegalLinks.php) and [src/widgets/LanguageSwitcher.php](src/widgets/LanguageSwitcher.php): footer links and language switcher
-- Consents on by default for every app: documents, age and legal-age confirmation, upload responsibility; opt-in: gambling and custom `consents` items
-- [src/Consents.php](src/Consents.php), [src/External.php](src/External.php), [src/Email.php](src/Email.php), [src/Withdrawal.php](src/Withdrawal.php): consents checklist, third-party resources, stopping email, withdrawal function
-- [src/blocklist/](src/blocklist/): blocklist adapters (Postar needs the endpoint from its docs)
-- [src/controllers/LegalController.php](src/controllers/LegalController.php): pages, hreflang, fallback notice
-- [tests/LegalTest.php](tests/LegalTest.php): behaviour covered (sanitising, fallback to last good render, languages, routes)
-- Upstream texts and rules: https://github.com/rapttor/rapttor.legal (AGENTS.md, SPEC.md)
-- Activity tags (`policy.activities`: gambling, alcohol, tobacco, cannabis, adult, dating, lgbtq, crypto, vpn, weapons, pharmacy, sanctions) add the countries that prohibit them to a required visitor checkbox; `php yii legal/restrictions [tag]` lists the data (sources and confidence per country)
-- Privacy and legal requests: `/legal/request`, `Yii::$app->legal->requests()`, `Legal::EVENT_REQUEST` to alert admins; no reply times on pages
-- Consents are stored through https://github.com/rapttor/yii2-metadata (`Yii::$app->metadata`, row `key=legal`, `remote_table=profile`): history, `export()` for access requests, `deleteAll()` on account deletion
-- New-account sign-in: `ConsentChecklist` widget and `consents()->missingRequired()`; the title is `appName()`; every consent is its own unticked checkbox with a short title and small-print hint; `LanguageSwitcher::widget(['sameRoute' => true])` above the form
-- Languages: English, Balkan `sh` (aliases sr, hr, bs, cnr, sr-Cyrl), de, fr, es, pt-BR, it, pl, nl, tr, uk, ru, ar, hi, ja, ko, zh-Hans (drafts); Balkan wording rules in rapttor/legal `i18n/BRIEF-sh.md`
-- Your own superadmins skip the consent gate (`exceptCan`); tenant admins consent like everybody else
+- [README.md](README.md): install, configuration, languages, consents, requests, console commands, safety
+- Upstream texts and rules: https://github.com/rapttor/rapttor.legal (AGENTS.md, SPEC.md, i18n/BRIEF-sh.md)
+
+## What it provides
+- Pages and languages: [src/Legal.php](src/Legal.php) (the component: documents(), html(), url(), offered(), appName(), visitorLanguage()), [src/controllers/LegalController.php](src/controllers/LegalController.php) (pages, hreflang, request form, consent screens), [src/widgets/LanguageSwitcher.php](src/widgets/LanguageSwitcher.php) (one-row language strip, flags, `sameRoute` for forms), [src/widgets/LegalLinks.php](src/widgets/LegalLinks.php). Languages: English, Balkan `sh` (aliases sr, hr, bs, cnr, sr-Cyrl), de, fr, es, pt-BR, it, pl, nl, tr, uk, ru, ar, hi, ja, ko, zh-Hans (drafts until reviewed); the Balkan wording rules are in rapttor/legal `i18n/BRIEF-sh.md`.
+- Consents: [src/Consents.php](src/Consents.php), [src/widgets/ConsentChecklist.php](src/widgets/ConsentChecklist.php), [src/filters/ConsentGate.php](src/filters/ConsentGate.php), [src/stores/](src/stores/). On by default for every app: the documents, age and legal-age confirmation, upload responsibility. Opt-in: gambling, marketing, third-party resources, custom `consents`, and the regions checkbox from `policy.activities`. Every item is its own unticked checkbox with a short title and a small-print hint. The record per account (version, time, language, hashed IP and browser, wording and document hashes, history) is kept through https://github.com/rapttor/yii2-metadata (`key=legal`, `remote_table=profile`): export with `metadata->export()`, delete with `deleteAll()` on account deletion.
+- New-account sign-in: `ConsentChecklist::widget()` in the sign-in form, `consents()->missingRequired()` before creating the account, `consents()->record($user->id, $answers, 'signup')` after; the title is `appName()`, an intro only if `signupIntro` is set. Your own superadmins skip the gate with `exceptCan`; tenant admins consent like everybody else.
+- Activity tags: set `policy.activities` (gambling, alcohol, tobacco, cannabis, adult, dating, lgbtq, crypto, vpn, weapons, pharmacy, sanctions; add `sanctions` to every app). The countries that prohibit them become one required checkbox in the visitor's language (data in rapttor/legal `restrictions/`, with source and confidence; counsel confirms). `php yii legal/restrictions [tag]` lists them. Never claim geo-blocking.
+- Privacy and legal requests: [src/Requests.php](src/Requests.php), route `/legal/request`; attach a handler to `Legal::EVENT_REQUEST` to alert your admins and show `requests()->open()` in your backoffice. Never promise a reply time on any page or form unless a law requires one.
+- Other: [src/External.php](src/External.php) (third-party resources), [src/Email.php](src/Email.php) and [src/blocklist/](src/blocklist/) (stop optional mail, block all, Postar), [src/Withdrawal.php](src/Withdrawal.php) (EU withdrawal), [src/Acceptance.php](src/Acceptance.php) (append-only acceptance log).
+
+## Tests
+- [tests/](tests/): behaviour covered (sanitising, languages, routes, consents and evidence, requests, regions, email, withdrawal); run `composer install && vendor/bin/phpunit`

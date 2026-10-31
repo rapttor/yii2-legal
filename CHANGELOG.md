@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.8
+- `llms.txt` of this package restructured (read first / what it provides / tests, with links to the new classes); the `llms.txt` that `php yii legal/agents --llms` writes into an app now lists the consent rules, the app's current `policy.activities`, the request form and the language rules.
+
 ## 2.8.7
 - New package description and README intro: multilingual legal pages, consents with proof and privacy requests, 17 languages.
 
