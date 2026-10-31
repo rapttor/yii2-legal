@@ -13,6 +13,7 @@ use yii\helpers\Html;
 
 ?>
 <article class="legal legal-<?= Html::encode(str_replace('_', '-', $entry['id'])) ?>" lang="<?= Html::encode($entry['lang']) ?>" dir="<?= Html::encode($dir) ?>">
+    <?= rapttor\yii2legal\widgets\LanguageSwitcher::widget(['compact' => true, 'flags' => true, 'options' => ['class' => 'legal-languages legal-languages-top']]) ?>
     <?php if ($notice !== null): ?>
         <p class="legal-notice" role="note"><?= Html::encode($notice) ?></p>
     <?php endif ?>

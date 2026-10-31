@@ -1,0 +1,3 @@
+Third-party material
+
+src/widgets/LanguageSwitcher.php embeds a small mask image (FLAG_MASKS['sh']) derived from the owner's file balkan-bw.svg, a map of the Balkan region. The source file names Jesse Miers as author (Inkscape export from a Wikimedia-style "Balkans regions map") and declares itself public domain in its own metadata (http://web.resource.org/cc/PublicDomain). The embedded image is only the outline of the region, reduced to 96x64 pixels. If the origin is ever in doubt, replace the image: nothing else depends on it.

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.4
+- **Language strip on the legal pages themselves** (document pages and the index): flags with short names in one row at the top, linking to the same document in each language. The Balkan language shows the region's outline (a 3 KB mask in the text colour) instead of a flag; see NOTICE.
+
 ## 2.8.3
 - **Compact language strip on consent forms**: flag on top, short language name in small type below, one row for all languages (sideways scroll on a narrow screen, never wrapping into several rows); the current language is bold and underlined; Balkan uses a black circle. Option `compact` on `LanguageSwitcher` (default on for `sameRoute`). Put the strip outside a narrow card so all languages fit.
 

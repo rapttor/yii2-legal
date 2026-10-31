@@ -9,6 +9,7 @@ use yii\helpers\Html;
 $this->title = 'Legal';
 ?>
 <section class="legal legal-index" lang="<?= Html::encode($lang) ?>" dir="<?= Html::encode($legal->library()->direction($lang)) ?>">
+    <?= rapttor\yii2legal\widgets\LanguageSwitcher::widget(['compact' => true, 'flags' => true, 'options' => ['class' => 'legal-languages legal-languages-top']]) ?>
     <h1><?= Html::encode($this->title) ?></h1>
     <ul>
         <?php foreach ($legal->documents($lang) as $d): ?>
