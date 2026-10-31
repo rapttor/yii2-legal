@@ -45,7 +45,7 @@ final class NewFeaturesTest extends TestCase
         }
         $legal = new Legal(array_replace([
             'config' => array_replace_recursive(self::BASE, $extra), 'cache' => null, 'archivePath' => '@runtime/legal-' . uniqid(),
-            'acceptanceTable' => 'legal_acceptance', 'consentTable' => 'legal_consent', 'suppressionTable' => 'legal_suppression',
+            'acceptanceTable' => 'legal_acceptance', 'suppressionTable' => 'legal_suppression',
             'tokenTable' => 'legal_token', 'withdrawalTable' => 'legal_withdrawal', 'secret' => 'test-secret',
             'mailSender' => function (string $to, string $subject, string $html, string $text, array $headers = []): void {
                 $this->mails[] = compact('to', 'subject', 'html', 'text', 'headers');
@@ -53,7 +53,7 @@ final class NewFeaturesTest extends TestCase
         ], $props));
         Yii::$app->set('legal', $legal);
         Schema::create(Yii::$app->db, $legal);
-        foreach ($wipe ? ['legal_acceptance', 'legal_consent', 'legal_suppression', 'legal_token', 'legal_withdrawal'] : [] as $t) {
+        foreach ($wipe ? ['legal_acceptance', 'rapttor_metadata', 'legal_suppression', 'legal_token', 'legal_withdrawal'] : [] as $t) {
             Yii::$app->db->createCommand()->delete($t)->execute();
         }
         return $legal;
@@ -582,6 +582,16 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame(64, strlen($s['terms']['ev']['doc']), 'hash of the document text');
         $this->assertNull($s['age']['ev']['doc'], 'only documents have a document hash');
         $this->assertNotSame($s['terms']['ev']['text'], $s['age']['ev']['text']);
+        $meta = (new \yii\db\Query())->from('rapttor_metadata')->where(['key' => 'legal', 'remote_table' => 'profile', 'remote_id' => '77'])->one();
+        $this->assertNotFalse($meta, 'one row per user in the shared metadata table');
+        $this->assertSame('1', (string)$meta['rev']);
+        $store = $legal->consents()->store();
+        $now = $store->load('77');
+        $now['age']['v'] = '21'; // a new version is accepted later
+        $now['age']['at'] += 5;
+        $store->save('77', $now);
+        $this->assertCount(1, $store->history('77'), 'a changed answer keeps the earlier one in history');
+        $this->assertSame('age', $store->history('77')[0]['key']);
         $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 77, 'document' => 'terms'])->one();
         $this->assertStringContainsString('evidence', (string)$row['context']);
         $this->assertArrayHasKey('ua_hash', $row);

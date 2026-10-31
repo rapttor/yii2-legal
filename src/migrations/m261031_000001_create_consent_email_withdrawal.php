@@ -19,7 +19,7 @@ final class m261031_000001_create_consent_email_withdrawal extends Migration
     public function safeDown(): void
     {
         $legal = Yii::$app->get('legal');
-        foreach ([$legal->withdrawalTable, $legal->tokenTable, $legal->suppressionTable, $legal->consentTable] as $t) {
+        foreach ([$legal->withdrawalTable, $legal->tokenTable, $legal->suppressionTable, $legal->metadataTable] as $t) {
             $this->dropTable($t);
         }
     }

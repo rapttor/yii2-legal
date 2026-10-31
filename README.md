@@ -103,7 +103,7 @@ Required items block use; optional ones are asked once per version and may be de
 
 ```php
 'as legalConsents' => ['class' => rapttor\yii2legal\filters\ConsentGate::class],      // sends signed-in users (anonymous accounts too) to /legal/consents
-// where the answers live (default: table legal_consent; or a JSON column of your user model):
+// where the answers live (default: row key=legal, remote_table=profile in the shared table rapttor_metadata; or a JSON column of your user model):
 'consentStore' => ['class' => rapttor\yii2legal\stores\JsonAttributeConsentStore::class, 'modelClass' => app\models\User::class, 'attribute' => 'consents'],
 Yii::$app->legal->consents()->granted($user->id, 'uploads');                              // check a consent in code
 ```

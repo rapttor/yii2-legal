@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace rapttor\yii2legal;
 
 use rapttor\yii2legal\stores\ConsentStore;
-use rapttor\yii2legal\stores\TableConsentStore;
+use rapttor\yii2legal\stores\MetadataConsentStore;
 use Yii;
 
 /**
@@ -30,7 +30,7 @@ final class Consents
     {
         if ($this->store === null) {
             $cfg = $this->legal->consentStore;
-            $this->store = $cfg === null ? new TableConsentStore($this->legal) : Yii::createObject($cfg);
+            $this->store = $cfg === null ? new MetadataConsentStore($this->legal) : Yii::createObject($cfg);
         }
         return $this->store;
     }
@@ -136,13 +136,6 @@ final class Consents
             $granted = !empty($answers[$d['key']]);
             $docText = $d['kind'] === 'document' ? $this->documentText($d['key'], $lang) : null;
             $entry = ['v' => $d['version'], 'granted' => $granted, 'at' => time(), 'lang' => $lang, 'source' => $source, 'ev' => $this->legal->evidence($d['label'], $docText)];
-            if (isset($state[$d['key']])) { // keep the earlier answers: a person's history of acceptances is the proof in a dispute
-                $old = $state[$d['key']];
-                $history = $old['history'] ?? [];
-                unset($old['history']);
-                $history[] = $old;
-                $entry['history'] = array_slice($history, -20);
-            }
             $state[$d['key']] = $entry;
             if ($d['kind'] === 'external') {
                 $cookie[$d['key']] = $granted;

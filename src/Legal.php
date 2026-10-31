@@ -68,9 +68,12 @@ class Legal extends Component
     public string $consentCookie = 'legal_consent';
     /** Extra consent items for the account checklist: [['key' => 'newsletter', 'required' => false, 'version' => '1', 'label' => ['en' => '...', 'sr' => '...']], ...]. */
     public array $consents = [];
-    /** Where the account's consents are stored: null = table `consentTable`; or ['class' => JsonAttributeConsentStore::class, 'modelClass' => User::class, 'attribute' => 'consents'] */
+    /** Where the account's consents are stored: null = the metadata table (`MetadataConsentStore`); or ['class' => JsonAttributeConsentStore::class, 'modelClass' => User::class, 'attribute' => 'consents'] */
     public array|null $consentStore = null;
-    public string $consentTable = '{{%legal_consent}}';
+    /** Shared per-account metadata table (also usable for theme settings and so on). Consents live in the row `metadataKey` / `metadataRemoteTable` / user id. */
+    public string $metadataTable = 'rapttor_metadata';
+    public string $metadataKey = 'legal';
+    public string $metadataRemoteTable = 'profile';
     public string $suppressionTable = '{{%legal_suppression}}';
     public string $tokenTable = '{{%legal_token}}';
     public string $withdrawalTable = '{{%legal_withdrawal}}';

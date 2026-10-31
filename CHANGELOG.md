@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.0
+- **Consents are kept in the shared `rapttor_metadata` table** (`MetadataConsentStore`, now the default): one row per user, `key=legal`, `remote_table=profile`, `remote_id=<user id>`, `content` (current state, JSON), `history` (earlier versions of changed answers, up to 200), `rev` (checked on save, so concurrent saves cannot overwrite each other). Table, key and remote table are configurable (`metadataTable`, `metadataKey`, `metadataRemoteTable`); other features can use the same table under other keys.
+- Removed `TableConsentStore` and the `legal_consent` table (nothing used it); `JsonAttributeConsentStore` stays an option. `php yii migrate` creates the metadata table. Per-entry `history` inside the state is gone (the row's `history` replaces it).
+
 ## 2.2.0 (requires rapttor/legal ^2.2)
 - **One checkbox per document**: `AcceptanceCheckbox` renders a separate unticked box for every document and `posted($docs)` is true only if each has its own ticked box (`legal_accept[<doc>]`). A single shared box no longer counts. **Breaking for custom code** that posted `legal_accept=1`.
 - **Proof of acceptance with the user profile**: consent entries now carry `ev` (keyed hashes of IP, browser details and Accept-Language, of the wording shown and of the document text) and `history` (earlier answers, last 20); `legal_acceptance` gets `ua_hash` and the evidence in `context`. New `Legal::evidence()`, `hash()`, `hashKey()`. Run `php yii migrate` (adds `legal_consent.evidence` and `legal_acceptance.ua_hash`).
