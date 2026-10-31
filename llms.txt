@@ -1,6 +1,6 @@
 # rapttor/yii2-legal
 
-> Yii2 package: legal pages (terms, privacy, cookies, acceptable use, imprint, refunds, DPA, game rules, app terms, licence) rendered from one company config, with sanitised HTML, language switcher, caching and a render archive. Texts come from rapttor/legal, bundled by Composer, no runtime network access.
+> Yii2 package for multilingual legal pages, consents and privacy requests, from one company config, in 17 languages with a language switcher: terms, privacy, cookies, imprint, refunds, DPA, game rules, app terms, licence. Also one-checkbox-per-item consents with proof, cookie consent, email stop and block, a privacy request form, and country restrictions per app activity. Texts come from rapttor/legal, bundled by Composer, no runtime network access.
 
 Integrating or changing this package: read AGENTS.md first. It lists what to ask the owner, what never to invent, and the promises the legal texts make that the app must keep.
 

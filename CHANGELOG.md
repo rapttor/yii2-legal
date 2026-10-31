@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.7
+- New package description and README intro: multilingual legal pages, consents with proof and privacy requests, 17 languages.
+
 ## 2.8.6
 - AGENTS.md examples use the Balkan tag `sh` instead of the removed `sr` variants.
 

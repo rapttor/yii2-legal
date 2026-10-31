@@ -1,6 +1,6 @@
 {
     "name": "rapttor/yii2-legal",
-    "description": "Yii2 extension that publishes legal pages from one company config: terms, privacy, cookies, acceptable use, imprint, refunds, DPA, game rules, app terms and licence, in several languages, with a language switcher, acceptance log, cookie consent and a render archive.",
+    "description": "Yii2 extension for multilingual legal pages, consents and privacy requests: terms, privacy, cookies, imprint, refunds, DPA and more from one company config, in 17 languages with a language switcher. Adds one-checkbox-per-item consents with proof, cookie consent, email stop and block, a privacy request form, and country restrictions for what your app does.",
     "type": "yii2-extension",
     "keywords": [
         "yii2",
