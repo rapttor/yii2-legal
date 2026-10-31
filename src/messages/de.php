@@ -23,7 +23,7 @@ return [
     'consent.advertising' => 'Werbung',
     'consent.gpc' => 'Ihr Browser sendet das Signal Global Privacy Control, daher bleibt nicht notwendiges Tracking deaktiviert.',
     'cookie.link' => 'Cookie-Einstellungen',
-    'consent.accept_doc' => 'Ich akzeptiere {doc}',
+    'consent.accept_doc' => 'Ich akzeptiere: {doc}',
     'consent.age' => 'Ich bin mindestens {level} Jahre alt',
     'consent.age_default_topics' => 'diesen Dienst',
     'consent.uploads' => 'Ich darf hochgeladene Inhalte nutzen',

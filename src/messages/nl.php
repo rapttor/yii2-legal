@@ -23,7 +23,7 @@ return [
     'consent.advertising' => 'Advertenties',
     'consent.gpc' => 'Uw browser stuurt het Global Privacy Control-signaal, dus niet-noodzakelijke tracking blijft uit.',
     'cookie.link' => 'Cookie-instellingen',
-    'consent.accept_doc' => 'Ik accepteer {doc}.',
+    'consent.accept_doc' => 'Ik accepteer: {doc}',
     'consent.age' => 'Ik ben minimaal {level} jaar oud.',
     'consent.age_default_topics' => 'deze dienst',
     'consent.uploads' => 'Ik mag gebruiken wat ik upload.',

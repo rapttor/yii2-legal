@@ -23,7 +23,7 @@ return [
     'consent.advertising' => 'Reklamowe',
     'consent.gpc' => 'Przeglądarka wysyła sygnał Global Privacy Control, więc śledzenie niebędące niezbędnym pozostaje wyłączone.',
     'cookie.link' => 'Ustawienia plików cookie',
-    'consent.accept_doc' => 'Akceptuję {doc}.',
+    'consent.accept_doc' => 'Akceptuję dokument: {doc}',
     'consent.age' => 'Mam co najmniej {level} lat.',
     'consent.age_default_topics' => 'tej usługi',
     'consent.uploads' => 'Mam prawo do przesyłanych treści.',

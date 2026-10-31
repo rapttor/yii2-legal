@@ -23,7 +23,7 @@ return [
     'consent.advertising' => 'Oglašavanje',
     'consent.gpc' => 'Vaš pregledač šalje signal Global Privacy Control, pa neesencijalno praćenje ostaje isključeno.',
     'cookie.link' => 'Podešavanja kolačića',
-    'consent.accept_doc' => 'Prihvatam {doc}.',
+    'consent.accept_doc' => 'Prihvatam dokument: {doc}',
     'consent.age' => 'Imam najmanje {level} godina.',
     'consent.age_default_topics' => 'ovu uslugu',
     'consent.uploads' => 'Smijem koristiti ono što otpremam.',

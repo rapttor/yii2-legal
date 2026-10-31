@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.7.1
+- Document checkbox labels no longer inflect the document title (`Prihvaćam dokument: {doc}`, `Acepto: {doc}`): titles are nominative and gendered, so the old sentences were ungrammatical in several languages. Translators: never put a placeholder where the language would decline or gender it; use a colon form.
+
 ## 2.7.0 (requires rapttor/legal ^2.5)
 - **Short checkbox titles with the explanation in small print** (`hint` in each consent definition; custom consents may give `hint` too). The age, uploads, gambling, regions, marketing and third-party items were reworded; the evidence hash covers label and hint.
 - **The visitor picks the language of the consent forms**: `?lang=` and a `legal_lang` cookie (`Legal::visitorLanguage()`, options `languageParam`, `languageCookie`), independent of the app's language; the switcher on consent screens shows flags (`flags` option) and the new-account sign-in step can use it (`LanguageSwitcher::widget(['sameRoute' => true])`). Add the `legal_lang` cookie (preference, 1 year) to your cookie list.

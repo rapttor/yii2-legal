@@ -23,7 +23,7 @@ return [
     'consent.advertising' => 'Publicité',
     'consent.gpc' => 'Votre navigateur envoie le signal Global Privacy Control, donc le suivi non essentiel reste désactivé.',
     'cookie.link' => 'Paramètres des cookies',
-    'consent.accept_doc' => 'J\'accepte {doc}',
+    'consent.accept_doc' => 'J\'accepte : {doc}',
     'consent.age' => 'J\'ai au moins {level} ans',
     'consent.age_default_topics' => 'ce service',
     'consent.uploads' => 'Je peux utiliser ce que je téléverse',
