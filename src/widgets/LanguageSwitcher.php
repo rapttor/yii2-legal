@@ -28,6 +28,14 @@ final class LanguageSwitcher extends Widget
     public bool $hideIfSingle = true;
     /** Link to the page being shown in each language (`?lang=`) instead of to the legal documents: for the consents and request forms. */
     public bool $sameRoute = false;
+    /** Show a flag next to each language name (default: on for same-route forms). Flags stand for countries, not languages: the name is always shown too. */
+    public ?bool $flags = null;
+    /** @var array<string,string> language tag => flag emoji */
+    public const FLAGS = [
+        'en' => '🇬🇧', 'sr' => '🇷🇸', 'sr-Cyrl' => '🇷🇸', 'hr' => '🇭🇷', 'bs' => '🇧🇦', 'cnr' => '🇲🇪', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
+        'pt-BR' => '🇧🇷', 'it' => '🇮🇹', 'pl' => '🇵🇱', 'nl' => '🇳🇱', 'tr' => '🇹🇷', 'uk' => '🇺🇦', 'ru' => '🇷🇺', 'ar' => '🇸🇦', 'hi' => '🇮🇳',
+        'ja' => '🇯🇵', 'ko' => '🇰🇷', 'zh-Hans' => '🇨🇳',
+    ];
     public array $options = ['class' => 'legal-languages'];
 
     public function run(): string
@@ -54,7 +62,8 @@ final class LanguageSwitcher extends Widget
         foreach ($list as $l) {
             $has = $doc !== null && $legal->document($doc, $l['tag']) !== null && !$legal->document($doc, $l['tag'])['fallback'];
             $url = $this->sameRoute ? \yii\helpers\Url::current(['lang' => $l['tag']]) : ($doc !== null && $has ? $legal->url($doc, $l['tag']) : $this->indexUrl($legal, $l['tag']));
-            $a = Html::a(Html::encode($this->labels[$l['tag']] ?? $l['name']), $url, [
+            $flag = ($this->flags ?? $this->sameRoute) && isset(self::FLAGS[$l['tag']]) ? '<span aria-hidden="true">' . self::FLAGS[$l['tag']] . '</span> ' : '';
+            $a = Html::a($flag . Html::encode($this->labels[$l['tag']] ?? $l['name']), $url, [
                 'hreflang' => $l['tag'], 'lang' => $l['tag'], 'rel' => 'alternate',
             ] + ($l['current'] ? ['aria-current' => 'true'] : []));
             $items .= Html::tag('li', $a, $l['current'] ? ['class' => 'is-current'] : []);

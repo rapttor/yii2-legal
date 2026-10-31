@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.7.0 (requires rapttor/legal ^2.5)
+- **Short checkbox titles with the explanation in small print** (`hint` in each consent definition; custom consents may give `hint` too). The age, uploads, gambling, regions, marketing and third-party items were reworded; the evidence hash covers label and hint.
+- **The visitor picks the language of the consent forms**: `?lang=` and a `legal_lang` cookie (`Legal::visitorLanguage()`, options `languageParam`, `languageCookie`), independent of the app's language; the switcher on consent screens shows flags (`flags` option) and the new-account sign-in step can use it (`LanguageSwitcher::widget(['sameRoute' => true])`). Add the `legal_lang` cookie (preference, 1 year) to your cookie list.
+- `signup.*` screen texts for the new-account step; all screen texts updated in the 12 other languages (drafts).
+
 ## 2.6.1
 - The acceptance log records the real source (`signup`, `consents`, ...) of documents accepted in the consents list.
 

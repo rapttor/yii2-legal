@@ -101,7 +101,7 @@ final class NewFeaturesTest extends TestCase
         $defs = array_column($legal->consents()->definitions(), null, 'key');
         $this->assertTrue($defs['age']['required']);
         $this->assertStringContainsString('at least 16 years old', $defs['age']['label']);
-        $this->assertStringContainsString('chat', $defs['age']['label']);
+        $this->assertStringContainsString('chat', $defs['age']['hint'], 'the explanation sits in the hint, the label stays short');
         $this->assertFalse($defs['marketing']['required']);
         $this->assertFalse($defs['ext_google_fonts']['required']);
     }
@@ -531,7 +531,7 @@ final class NewFeaturesTest extends TestCase
         $this->assertTrue($defs['age']['required']);
         $this->assertTrue($defs['uploads']['required']);
         $this->assertStringContainsString('at least 18 years old', $defs['age']['label']);
-        $this->assertStringContainsString('this service', $defs['age']['label'], 'generic wording when the app names no topics');
+        $this->assertStringContainsString('this service', $defs['age']['hint'], 'generic wording when the app names no topics');
         $this->assertCount(4, $legal->consents()->blocking(1), 'a new account must answer all four before using the app');
     }
 
@@ -549,7 +549,7 @@ final class NewFeaturesTest extends TestCase
         $age = array_column($legal->consents()->definitions(), null, 'key')['age'];
         $this->assertSame('16', $age['version'], 'changing the age asks everybody again');
         $this->assertStringContainsString('at least 16 years old', $age['label']);
-        $this->assertStringContainsString('chat and games', $age['label']);
+        $this->assertStringContainsString('chat and games', $age['hint']);
     }
 
     public function testGamblingIsOptInAndHasItsOwnAge(): void
@@ -559,7 +559,8 @@ final class NewFeaturesTest extends TestCase
         $g = array_column($legal->consents()->definitions(), null, 'key')['gambling'];
         $this->assertTrue($g['required']);
         $this->assertSame('21', $g['version']);
-        $this->assertStringContainsString('at least 21 years old, gambling is lawful where I live', $g['label']);
+        $this->assertStringContainsString('at least 21', $g['label']);
+        $this->assertStringContainsString('lawful where I live', $g['hint']);
         $this->assertStringContainsString('not real age verification', implode(' ', $legal->hints()));
     }
 
@@ -651,12 +652,32 @@ final class NewFeaturesTest extends TestCase
         $defs = array_column($legal->consents()->definitions('en'), null, 'key');
         $this->assertArrayHasKey('regions', $defs);
         $this->assertTrue($defs['regions']['required']);
-        $this->assertStringContainsString('Atlantis, Mu', $defs['regions']['label']);
+        $this->assertStringContainsString('Atlantis, Mu', $defs['regions']['hint']);
         $v1 = $defs['regions']['version'];
         $legal2 = $this->legal(['policy' => ['excluded_regions' => 'Atlantis, Mu, Lemuria']]);
         $this->assertNotSame($v1, array_column($legal2->consents()->definitions('en'), null, 'key')['regions']['version'], 'a changed list is asked again');
         $legal3 = $this->legal();
         $this->assertArrayNotHasKey('regions', array_column($legal3->consents()->definitions('en'), null, 'key'));
+    }
+
+    public function testLabelsStayShort(): void
+    {
+        $legal = $this->legal(['policy' => ['excluded_regions' => 'Atlantis'], 'feature' => ['gambling' => true, 'marketing' => true]], [], true, true);
+        foreach ($legal->consents()->definitions('en') as $d) {
+            $this->assertLessThanOrEqual(48, mb_strlen($d['label']), $d['key'] . ': a checkbox title nobody reads is a title nobody ticks');
+        }
+    }
+
+    public function testVisitorLanguageFromQueryAndCookie(): void
+    {
+        $legal = $this->legal([], ['languages' => ['en', 'hr'], 'publishDrafts' => true]);
+        $_GET['lang'] = 'hr';
+        Yii::$app->request->setQueryParams(['lang' => 'hr']);
+        $p = new \ReflectionProperty(Legal::class, 'visitorRead'); $p->setValue($legal, false);
+        $this->assertSame('hr', $legal->currentLanguage());
+        $this->assertSame('hr', Yii::$app->response->cookies->get('legal_lang')->value, 'the choice is remembered');
+        Yii::$app->request->setQueryParams([]);
+        unset($_GET['lang']);
     }
 
     public function testChecklistWidgetAndSignupCheck(): void

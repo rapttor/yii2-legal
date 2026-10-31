@@ -28,10 +28,11 @@ final class ConsentChecklist extends Widget
         $legal = Yii::$app->get('legal');
         $out = '';
         foreach ($this->items ?? $legal->consents()->definitions() as $d) {
-            $link = $d['url'] ? ' ' . Html::a(Html::encode($legal->t('consents.read')), $d['url'], ['target' => '_blank', 'rel' => 'noopener']) : '';
-            $label = Html::checkbox($this->name . '[' . $d['key'] . ']', false, ['value' => '1']) . ' ' . Html::encode($d['label'])
-                . ' <small>(' . Html::encode($legal->t($d['required'] ? 'consents.required' : 'consents.optional')) . ')</small>';
-            $out .= Html::tag('p', Html::tag('label', $label) . $link, ['class' => 'legal-consent-item' . (in_array($d['key'], $this->missing, true) ? ' legal-consent-missing' : '')]);
+            $link = $d['url'] ? ' ' . Html::a(Html::encode($legal->t('consents.read')), $d['url'], ['target' => '_blank', 'rel' => 'noopener', 'style' => 'font-size:.875em']) : '';
+            $label = Html::checkbox($this->name . '[' . $d['key'] . ']', false, ['value' => '1', 'style' => 'margin-right:.4em']) . Html::encode($d['label'])
+                . ' <small style="opacity:.7">(' . Html::encode($legal->t($d['required'] ? 'consents.required' : 'consents.optional')) . ')</small>';
+            $hint = ($d['hint'] ?? '') !== '' ? Html::tag('small', Html::encode($d['hint']), ['class' => 'legal-consent-hint', 'style' => 'display:block;opacity:.7;margin:.15rem 0 0 1.6em']) : '';
+            $out .= Html::tag('p', Html::tag('label', $label) . $link . $hint, ['class' => 'legal-consent-item' . (in_array($d['key'], $this->missing, true) ? ' legal-consent-missing' : '')]);
         }
         return Html::tag('div', $out, ['class' => 'legal-consent-list']);
     }

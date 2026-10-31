@@ -378,7 +378,37 @@ class Legal extends Component
     /** The language of the page being served: ?lang from the route if given, else $language, else the application language. */
     public function currentLanguage(): string
     {
-        return $this->forced ?? $this->resolve($this->language ?? (string)Yii::$app->language);
+        return $this->forced ?? $this->visitorLanguage() ?? $this->resolve($this->language ?? (string)Yii::$app->language);
+    }
+
+    /** Name of the query parameter and of the cookie that carry the visitor's language choice (`?lang=hr` on any page that shows legal screens). */
+    public string $languageParam = 'lang';
+    public string $languageCookie = 'legal_lang';
+    private ?string $visitor = null;
+    private bool $visitorRead = false;
+
+    /** The language the visitor picked with the language switcher (query first, then the cookie), if the site offers it. */
+    public function visitorLanguage(): ?string
+    {
+        if ($this->visitorRead || !(Yii::$app instanceof \yii\web\Application)) {
+            return $this->visitor;
+        }
+        $this->visitorRead = true;
+        $req = Yii::$app->request;
+        $q = $req->get($this->languageParam);
+        $fromQuery = is_string($q) ? $this->library()->normalizeLanguage($q) : null;
+        $tag = $fromQuery;
+        if ($tag === null) {
+            $c = $req->cookies->getValue($this->languageCookie);
+            $tag = is_string($c) ? $this->library()->normalizeLanguage($c) : null;
+        }
+        if ($tag === null || !in_array($tag, $this->offered(), true)) {
+            return $this->visitor = null;
+        }
+        if ($fromQuery !== null) {
+            Yii::$app->response->cookies->add(new \yii\web\Cookie(['name' => $this->languageCookie, 'value' => $tag, 'expire' => time() + 31536000, 'sameSite' => \yii\web\Cookie::SAME_SITE_LAX, 'httpOnly' => true]));
+        }
+        return $this->visitor = $tag;
     }
 
     /** Resolve any tag ("sr_RS", "de-AT") to an offered language, following the fallback chain, finally English. */
@@ -398,7 +428,7 @@ class Legal extends Component
     /** The language used when the URL has no language segment. */
     public function defaultUrlLanguage(): string
     {
-        return $this->resolve($this->language ?? (string)Yii::$app->language);
+        return $this->visitorLanguage() ?? $this->resolve($this->language ?? (string)Yii::$app->language);
     }
 
     /** Public URL of a document. Without $lang it is in the page's current language; the default language has no language segment. */

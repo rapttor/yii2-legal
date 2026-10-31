@@ -35,7 +35,7 @@ final class Consents
         return $this->store;
     }
 
-    /** @return list<array{key:string,version:string,required:bool,kind:string,label:string,url:?string}> */
+    /** @return list<array{key:string,version:string,required:bool,kind:string,label:string,hint:?string,url:?string}> */
     public function definitions(?string $lang = null): array
     {
         $lang ??= $this->legal->currentLanguage();
@@ -47,7 +47,7 @@ final class Consents
             if ($d !== null) {
                 $out[] = [
                     'key' => $id, 'version' => self::minor($d['version']), 'required' => true, 'kind' => 'document',
-                    'label' => $this->legal->t('consent.accept_doc', ['{doc}' => $d['title']], $lang), 'url' => $this->legal->url($id, $d['lang']),
+                    'label' => $this->legal->t('consent.accept_doc', ['{doc}' => $d['title']], $lang), 'hint' => null, 'url' => $this->legal->url($id, $d['lang']),
                 ];
             }
         }
@@ -55,32 +55,36 @@ final class Consents
             $level = (string)($cfg['policy']['age_gate'] ?? '18');
             $topics = trim((string)($cfg['policy']['age_topics'] ?? ''));
             $out[] = ['key' => 'age', 'version' => $level, 'required' => true, 'kind' => 'age', 'url' => null,
-                'label' => $topics !== ''
-                    ? $this->legal->t('consent.age', ['{level}' => $level, '{topics}' => $topics], $lang)
-                    : $this->legal->t('consent.age_generic', ['{level}' => $level], $lang)];
+                'label' => $this->legal->t('consent.age', ['{level}' => $level], $lang),
+                'hint' => $topics !== '' ? $this->legal->t('consent.age_hint', ['{topics}' => $topics], $lang) : $this->legal->t('consent.age_generic', [], $lang)];
         }
         if (!empty($f['gambling'])) {
             $lvl = (string)($cfg['policy']['gambling_age'] ?? '18');
-            $out[] = ['key' => 'gambling', 'version' => $lvl, 'required' => true, 'kind' => 'age', 'url' => null, 'label' => $this->legal->t('consent.gambling', ['{level}' => $lvl], $lang)];
+            $out[] = ['key' => 'gambling', 'version' => $lvl, 'required' => true, 'kind' => 'age', 'url' => null,
+                'label' => $this->legal->t('consent.gambling', ['{level}' => $lvl], $lang), 'hint' => $this->legal->t('consent.gambling_hint', [], $lang)];
         }
         if (!empty($f['uploads'])) {
-            $out[] = ['key' => 'uploads', 'version' => '1', 'required' => true, 'kind' => 'confirm', 'url' => null, 'label' => $this->legal->t('consent.uploads', [], $lang)];
+            $out[] = ['key' => 'uploads', 'version' => '1', 'required' => true, 'kind' => 'confirm', 'url' => null,
+                'label' => $this->legal->t('consent.uploads', [], $lang), 'hint' => $this->legal->t('consent.uploads_hint', [], $lang)];
         }
         $regions = trim((string)($cfg['policy']['excluded_regions'] ?? ''));
         if ($regions !== '') { // we cannot see where a visitor really is (VPNs): the visitor confirms it. A changed list asks everyone again.
             $out[] = ['key' => 'regions', 'version' => substr(md5(mb_strtolower($regions)), 0, 8), 'required' => true, 'kind' => 'confirm', 'url' => null,
-                'label' => $this->legal->t('consent.regions', ['{countries}' => $regions], $lang)];
+                'label' => $this->legal->t('consent.regions', [], $lang), 'hint' => $this->legal->t('consent.regions_hint', ['{countries}' => $regions], $lang)];
         }
         if (!empty($f['marketing'])) {
-            $out[] = ['key' => 'marketing', 'version' => '1', 'required' => false, 'kind' => 'optional', 'url' => null, 'label' => $this->legal->t('consent.marketing', [], $lang)];
+            $out[] = ['key' => 'marketing', 'version' => '1', 'required' => false, 'kind' => 'optional', 'url' => null,
+                'label' => $this->legal->t('consent.marketing', [], $lang), 'hint' => $this->legal->t('consent.marketing_hint', [], $lang)];
         }
         foreach ($this->legal->external()->items() as $it) {
             $out[] = ['key' => 'ext_' . $it['key'], 'version' => '1', 'required' => false, 'kind' => 'external', 'url' => null,
-                'label' => $this->legal->t('consent.external', ['{name}' => $it['name'], '{provider}' => $it['provider'], '{country}' => $it['country']], $lang)];
+                'label' => $this->legal->t('consent.external', ['{name}' => $it['name']], $lang),
+                'hint' => $this->legal->t('consent.external_hint', ['{provider}' => $it['provider'], '{country}' => $it['country']], $lang)];
         }
         foreach ($this->legal->consents as $c) {
             $label = is_array($c['label'] ?? null) ? ($c['label'][$lang] ?? $c['label']['en'] ?? reset($c['label'])) : (string)($c['label'] ?? $c['key']);
-            $out[] = ['key' => (string)$c['key'], 'version' => (string)($c['version'] ?? '1'), 'required' => !empty($c['required']), 'kind' => 'custom', 'url' => $c['url'] ?? null, 'label' => (string)$label];
+            $out[] = ['key' => (string)$c['key'], 'version' => (string)($c['version'] ?? '1'), 'required' => !empty($c['required']), 'kind' => 'custom', 'url' => $c['url'] ?? null, 'label' => (string)$label,
+                'hint' => isset($c['hint']) ? (string)(is_array($c['hint']) ? ($c['hint'][$lang] ?? $c['hint']['en'] ?? reset($c['hint'])) : $c['hint']) : null];
         }
         return $out;
     }
@@ -149,7 +153,7 @@ final class Consents
         foreach ($pending as $d) {
             $granted = !empty($answers[$d['key']]);
             $docText = $d['kind'] === 'document' ? $this->documentText($d['key'], $lang) : null;
-            $entry = ['v' => $d['version'], 'granted' => $granted, 'at' => time(), 'lang' => $lang, 'source' => $source, 'ev' => $this->legal->evidence($d['label'], $docText)];
+            $entry = ['v' => $d['version'], 'granted' => $granted, 'at' => time(), 'lang' => $lang, 'source' => $source, 'ev' => $this->legal->evidence($d['label'] . (($d['hint'] ?? '') !== '' ? "\n" . $d['hint'] : ''), $docText)];
             $state[$d['key']] = $entry;
             if ($d['kind'] === 'external') {
                 $cookie[$d['key']] = $granted;
