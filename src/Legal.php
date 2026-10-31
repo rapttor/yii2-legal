@@ -66,6 +66,24 @@ class Legal extends Component
     public string $acceptanceTable = '{{%legal_acceptance}}';
     /** Name of the cookie that stores the visitor's cookie choices. */
     public string $consentCookie = 'legal_consent';
+    /** Extra consent items for the account checklist: [['key' => 'newsletter', 'required' => false, 'version' => '1', 'label' => ['en' => '...', 'sr' => '...']], ...]. */
+    public array $consents = [];
+    /** Where the account's consents are stored: null = table `consentTable`; or ['class' => JsonAttributeConsentStore::class, 'modelClass' => User::class, 'attribute' => 'consents'] */
+    public array|null $consentStore = null;
+    public string $consentTable = '{{%legal_consent}}';
+    public string $suppressionTable = '{{%legal_suppression}}';
+    public string $tokenTable = '{{%legal_token}}';
+    public string $withdrawalTable = '{{%legal_withdrawal}}';
+    /** HMAC key for signed email links; default: the request cookie validation key. Set a long random value in production. */
+    public ?string $secret = null;
+    /** Sends an email: fn(string $to, string $subject, string $html, string $text, array $headers): void. Default: the Yii `mailer` component. */
+    public mixed $mailSender = null;
+    /** Mailbox for mail-client unsubscribe (mailto:) in List-Unsubscribe; optional. */
+    public ?string $unsubscribeMailto = null;
+    /** Where "block all email" requests are also sent, e.g. your email provider's blocklist. Object, config array, or null (local list only). */
+    public mixed $blocklist = null;
+    /** Event raised after a consumer withdraws from a contract (see WithdrawalEvent): process the refund here. */
+    public const EVENT_WITHDRAWAL = 'withdrawal';
 
     private ?Library $lib = null;
     /** @var array<string,mixed>|null */
@@ -77,6 +95,38 @@ class Legal extends Component
         if (!class_exists(Library::class)) {
             throw new InvalidConfigException('rapttor/legal is not installed: composer require rapttor/legal');
         }
+    }
+
+    public function consents(): Consents
+    {
+        return $this->consentsService ??= new Consents($this);
+    }
+
+    public function external(): External
+    {
+        return $this->externalService ??= new External($this);
+    }
+
+    public function email(): Email
+    {
+        return $this->emailService ??= new Email($this);
+    }
+
+    public function withdrawal(): Withdrawal
+    {
+        return $this->withdrawalService ??= new Withdrawal($this);
+    }
+
+    private ?Withdrawal $withdrawalService = null;
+    private ?Consents $consentsService = null;
+    private ?External $externalService = null;
+    private ?Email $emailService = null;
+
+    /** The name users know the service by: config product.name, else the company name. */
+    public function productName(): string
+    {
+        $c = $this->effectiveConfig();
+        return (string)(($c['product']['name'] ?? '') ?: ($c['company']['name'] ?? ''));
     }
 
     public function acceptance(): Acceptance
@@ -97,17 +147,22 @@ class Legal extends Component
     private ?Acceptance $acceptance = null;
     private ?Consent $consent = null;
     private ?Approval $approval = null;
-    /** @var array<string,array<string,string>>|null */
-    private static ?array $messages = null;
+    /** @var array<string,array<string,string>> */
+    private static array $messages = [];
 
     /** UI string in a legal-page language ("sr-Cyrl" is transliterated from "sr"); English if missing. @param array<string,string> $params */
     public function t(string $key, array $params = [], ?string $lang = null): string
     {
-        self::$messages ??= require __DIR__ . '/messages.php';
         $lang ??= $this->currentLanguage();
         $base = $this->library()->normalizeLanguage($lang) ?? 'en';
         $cyr = $base === 'sr-Cyrl';
         $base = $cyr ? 'sr' : $base;
+        foreach (['en', $base] as $l) {
+            if (!isset(self::$messages[$l])) {
+                $file = __DIR__ . "/messages/$l.php";
+                self::$messages[$l] = is_file($file) ? require $file : [];
+            }
+        }
         $text = self::$messages[$base][$key] ?? self::$messages['en'][$key] ?? $key;
         $text = strtr($text, $params);
         return $cyr ? (new \rapttor\legal\Transliterator($this->libraryRoot))->toCyrillic($text) : $text;

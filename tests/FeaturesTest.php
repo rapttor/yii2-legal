@@ -60,7 +60,7 @@ final class FeaturesTest extends TestCase
         $this->assertCount(2, $acc->pending(7), 'terms and privacy are pending for a new user');
         $this->assertSame(2, $acc->record(7, null, 'signup'));
         $this->assertSame([], $acc->pending(7));
-        $this->assertSame('1.0.0', $acc->accepted(7)['terms']);
+        $this->assertSame($legal->document('terms')['version'], $acc->accepted(7)['terms']);
         $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 7, 'document' => 'terms'])->one();
         $this->assertSame('signup', $row['source']);
     }

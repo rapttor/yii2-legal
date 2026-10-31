@@ -42,6 +42,7 @@ final class Acceptance
             'source' => 'string(24) NOT NULL',
             'ip_hash' => 'string(64) NULL',
             'accepted_at' => 'integer NOT NULL',
+            'context' => 'text NULL',
         ])->execute();
         $db->createCommand()->createIndex('idx_legal_acceptance_user', $table, ['user_id', 'document'])->execute();
     }
@@ -52,9 +53,10 @@ final class Acceptance
      * @param int|null $userId logged-in user, or null for a guest
      * @param list<string>|null $docIds default: the site's `acceptDocs`
      * @param string|null $subject for guests: an email or other stable identifier (stored as given: keep it minimal)
+     * @param string|null $context what was shown, e.g. the renewal terms next to the pay button (JSON); keep it at least 3 years for subscriptions
      * @return int rows written
      */
-    public function record(?int $userId, ?array $docIds = null, string $source = 'signup', ?string $subject = null, ?string $lang = null): int
+    public function record(?int $userId, ?array $docIds = null, string $source = 'signup', ?string $subject = null, ?string $lang = null, ?string $context = null): int
     {
         $docIds ??= $this->legal->acceptDocs;
         $lang ??= $this->legal->currentLanguage();
@@ -66,7 +68,7 @@ final class Acceptance
             }
             $this->db()->createCommand()->insert($this->legal->acceptanceTable, [
                 'user_id' => $userId, 'subject' => $subject, 'document' => $id, 'version' => $d['version'], 'lang' => $d['lang'],
-                'release' => $this->legal->release(), 'source' => $source, 'ip_hash' => $this->ipHash(), 'accepted_at' => time(),
+                'release' => $this->legal->release(), 'source' => $source, 'ip_hash' => $this->ipHash(), 'accepted_at' => time(), 'context' => $context,
             ])->execute();
             $n++;
         }
@@ -110,6 +112,12 @@ final class Acceptance
     {
         $mm = static fn(string $v): string => implode('.', array_slice(explode('.', $v . '.0.0'), 0, 2));
         return version_compare($mm($current), $mm($accepted), '>');
+    }
+
+    /** Keyed hash of the client IP (not reversible without the key), or null outside a web request. */
+    public function hashedIp(): ?string
+    {
+        return $this->ipHash();
     }
 
     /** Keyed hash of the client IP (not reversible without the key). */

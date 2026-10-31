@@ -34,7 +34,7 @@ final class AcceptanceFilter extends ActionFilter
         if ($legal->acceptance()->pending((int)$user->id) === []) {
             return true;
         }
-        Yii::$app->response->redirect(['/' . $legal->routePrefix . '/accept', 'return' => Yii::$app->request->url])->send();
+        Yii::$app->response->redirect(['/' . $legal->routePrefix . '/accept', 'return' => Yii::$app->request->url]); // Yii sends this redirect once the filter returns false
         return false;
     }
 }

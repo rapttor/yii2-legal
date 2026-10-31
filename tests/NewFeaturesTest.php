@@ -1,0 +1,441 @@
+<?php
+
+declare(strict_types=1);
+
+namespace rapttor\yii2legal\tests;
+
+use PHPUnit\Framework\TestCase;
+use rapttor\yii2legal\blocklist\BlocklistInterface;
+use rapttor\yii2legal\blocklist\PostarBlocklist;
+use rapttor\yii2legal\Bootstrap;
+use rapttor\yii2legal\console\LegalController as ConsoleController;
+use rapttor\yii2legal\events\WithdrawalEvent;
+use rapttor\yii2legal\filters\ConsentGate;
+use rapttor\yii2legal\Legal;
+use rapttor\yii2legal\Schema;
+use rapttor\yii2legal\stores\JsonAttributeConsentStore;
+use rapttor\yii2legal\widgets\CheckoutDisclosure;
+use Yii;
+use yii\db\ActiveRecord;
+
+final class TestUserRecord extends ActiveRecord
+{
+    public static function tableName(): string
+    {
+        return 'user_t';
+    }
+}
+
+final class NewFeaturesTest extends TestCase
+{
+    /** @var list<array<string,mixed>> */
+    private array $mails = [];
+
+    private const BASE = [
+        'company' => ['name' => 'Acme d.o.o.', 'address' => '1 Main St, Town, Land', 'country' => 'Land', 'email' => 'hi@acme.test', 'website' => 'https://acme.test'],
+        'product' => ['name' => 'Acme App'],
+    ];
+
+    private function legal(array $extra = [], array $props = [], bool $wipe = true): Legal
+    {
+        $this->mails = [];
+        $legal = new Legal(array_replace([
+            'config' => array_replace_recursive(self::BASE, $extra), 'cache' => null, 'archivePath' => '@runtime/legal-' . uniqid(),
+            'acceptanceTable' => 'legal_acceptance', 'consentTable' => 'legal_consent', 'suppressionTable' => 'legal_suppression',
+            'tokenTable' => 'legal_token', 'withdrawalTable' => 'legal_withdrawal', 'secret' => 'test-secret',
+            'mailSender' => function (string $to, string $subject, string $html, string $text, array $headers = []): void {
+                $this->mails[] = compact('to', 'subject', 'html', 'text', 'headers');
+            },
+        ], $props));
+        Yii::$app->set('legal', $legal);
+        Schema::create(Yii::$app->db, $legal);
+        foreach ($wipe ? ['legal_acceptance', 'legal_consent', 'legal_suppression', 'legal_token', 'legal_withdrawal'] : [] as $t) {
+            Yii::$app->db->createCommand()->delete($t)->execute();
+        }
+        return $legal;
+    }
+
+    protected function setUp(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        Yii::$app->request->setBodyParams([]);
+        Yii::$app->response->cookies->removeAll();
+        Yii::$app->response->headers->removeAll();
+        Yii::$app->response->statusCode = 200;
+    }
+
+    protected function tearDown(): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_COOKIE = [];
+        $p = new \ReflectionProperty(\yii\web\Request::class, '_cookies');
+        $p->setValue(Yii::$app->request, null);
+    }
+
+    private function post(array $params): void
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        Yii::$app->request->setBodyParams($params);
+    }
+
+    private function token(): string
+    {
+        $this->assertNotEmpty($this->mails, 'a confirmation email was sent');
+        preg_match('/t=([a-f0-9]{48})/', $this->mails[array_key_last($this->mails)]['text'], $m);
+        return $m[1] ?? '';
+    }
+
+    // ---- consent registry -------------------------------------------------------------------------------------
+
+    public function testDefinitionsFollowTheFeatures(): void
+    {
+        $keys = fn(Legal $l): array => array_column($l->consents()->definitions(), 'key');
+        $this->assertSame(['terms', 'privacy'], $keys($this->legal()));
+        $legal = $this->legal(['feature' => ['age_gate' => true, 'uploads' => true, 'marketing' => true], 'policy' => ['age_gate' => '16', 'age_topics' => 'chat'],
+            'data' => ['external' => [['key' => 'google_fonts', 'name' => 'Google Fonts', 'provider' => 'Google', 'country' => 'USA', 'purpose' => 'fonts']]]]);
+        $this->assertSame(['terms', 'privacy', 'age', 'uploads', 'marketing', 'ext_google_fonts'], $keys($legal));
+        $defs = array_column($legal->consents()->definitions(), null, 'key');
+        $this->assertTrue($defs['age']['required']);
+        $this->assertStringContainsString('at least 16 years old', $defs['age']['label']);
+        $this->assertStringContainsString('chat', $defs['age']['label']);
+        $this->assertFalse($defs['marketing']['required']);
+        $this->assertFalse($defs['ext_google_fonts']['required']);
+    }
+
+    public function testRequiredConsentsBlockAndOptionalOnesAreAskedOncePerVersion(): void
+    {
+        $legal = $this->legal(['feature' => ['marketing' => true]]);
+        $reg = $legal->consents();
+        $this->assertCount(3, $reg->pending(5));
+        $this->assertCount(2, $reg->blocking(5));
+
+        $res = $reg->record(5, ['terms' => '1']);
+        $this->assertFalse($res['ok']);
+        $this->assertSame(['privacy'], $res['missing']);
+        $this->assertCount(3, $reg->pending(5), 'nothing stored while a required item is missing');
+
+        $this->assertTrue($reg->record(5, ['terms' => '1', 'privacy' => '1'])['ok'], 'marketing declined is allowed');
+        $this->assertSame([], $reg->pending(5), 'the declined optional item is not asked again in the same version');
+        $this->assertTrue($reg->granted(5, 'terms'));
+        $this->assertFalse($reg->granted(5, 'marketing'));
+        $this->assertFalse($reg->state(5)['marketing']['granted']);
+
+        // A new version of an item asks again, only for that item.
+        $legal = $this->legal(['feature' => ['marketing' => true]], ['consents' => [['key' => 'research', 'required' => false, 'version' => '1', 'label' => 'Research']]]);
+        $legal->consents()->record(6, ['terms' => 1, 'privacy' => 1]);
+        $legal2 = $this->legal(['feature' => ['marketing' => true]], ['consents' => [['key' => 'research', 'required' => false, 'version' => '2', 'label' => 'Research']]], false);
+        $this->assertSame(['research'], array_column($legal2->consents()->pending(6), 'key'), 'marketing was already answered; only the changed item is asked again');
+    }
+
+    public function testConsentsCanBeKeptInAJsonAttributeOfTheUserModel(): void
+    {
+        Yii::$app->db->createCommand('DROP TABLE IF EXISTS user_t')->execute();
+        Yii::$app->db->createCommand()->createTable('user_t', ['id' => 'pk', 'consents' => 'text NULL'])->execute();
+        Yii::$app->db->createCommand()->insert('user_t', ['id' => 9])->execute();
+        $legal = $this->legal([], ['consentStore' => ['class' => JsonAttributeConsentStore::class, 'modelClass' => TestUserRecord::class, 'attribute' => 'consents']]);
+        $this->assertTrue($legal->consents()->record(9, ['terms' => 1, 'privacy' => 1])['ok']);
+        $json = json_decode((string)Yii::$app->db->createCommand('SELECT consents FROM user_t WHERE id = 9')->queryScalar(), true);
+        $this->assertTrue($json['terms']['granted']);
+        $this->assertSame([], $legal->consents()->pending(9));
+    }
+
+    public function testConsentGateRedirectsUntilEverythingIsAnswered(): void
+    {
+        $legal = $this->legal();
+        Yii::$app->user->setIdentity(new TestIdentity(['id' => 21]));
+        $controller = new \yii\web\Controller('site', Yii::$app);
+        $gate = new ConsentGate();
+        $this->assertFalse($gate->beforeAction(new \yii\base\InlineAction('index', $controller, 'actionIndex')), 'pending consents: stop the action');
+        $this->assertStringContainsString('/legal/consents', (string)Yii::$app->response->headers->get('Location'));
+        $this->assertTrue($gate->beforeAction(new \yii\base\InlineAction('index', new \yii\web\Controller('legal', Yii::$app), 'actionIndex')), 'legal pages stay reachable');
+        $legal->consents()->record(21, ['terms' => 1, 'privacy' => 1]);
+        $this->assertTrue($gate->beforeAction(new \yii\base\InlineAction('index', $controller, 'actionIndex')));
+    }
+
+    public function testConsentsPageStoresAnswers(): void
+    {
+        $legal = $this->legal(['feature' => ['uploads' => true]]);
+        (new Bootstrap())->bootstrap(Yii::$app);
+        Yii::$app->user->setIdentity(new TestIdentity(['id' => 30]));
+        $out = (string)Yii::$app->runAction('legal/consents');
+        $this->assertStringContainsString('name="consent[uploads]"', $out);
+        $this->post(['consent' => ['terms' => '1', 'privacy' => '1']]);
+        $out = (string)Yii::$app->runAction('legal/consents');
+        $this->assertStringContainsString('role="alert"', $out, 'uploads responsibility is required');
+        $this->post(['consent' => ['terms' => '1', 'privacy' => '1', 'uploads' => '1']]);
+        $res = Yii::$app->runAction('legal/consents');
+        $this->assertInstanceOf(\yii\web\Response::class, $res);
+        $this->assertSame([], $legal->consents()->pending(30));
+    }
+
+    // ---- third-party resources --------------------------------------------------------------------------------
+
+    public function testExternalResourcesNeedConsentPerItem(): void
+    {
+        $legal = $this->legal(['data' => ['external' => [
+            ['key' => 'google_fonts', 'name' => 'Google Fonts', 'provider' => 'Google', 'country' => 'USA', 'purpose' => 'fonts'],
+            ['key' => 'maps', 'name' => 'Maps', 'provider' => 'Acme Maps', 'country' => 'EU', 'purpose' => 'map tiles'],
+        ]]]);
+        $this->assertFalse($legal->external()->allows('google_fonts'), 'nothing before the visitor agrees');
+        $this->assertTrue($legal->consent()->needsBanner());
+        $this->assertStringContainsString('Google Fonts', \rapttor\yii2legal\widgets\CookieBanner::widget());
+
+        // The settings page explains that the IP address is sent.
+        $page = (string)Yii::$app->runAction('legal/consent');
+        $this->assertStringContainsString('IP address', $page);
+        $this->assertStringContainsString('name="c[ext_maps]"', $page);
+
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        Yii::$app->request->setBodyParams(['action' => 'save', 'c' => ['ext_maps' => '1']]);
+        Yii::$app->runAction('legal/consent');
+        $_COOKIE['legal_consent'] = Yii::$app->response->cookies->get('legal_consent')->value;
+        $p = new \ReflectionProperty(\yii\web\Request::class, '_cookies');
+        $p->setValue(Yii::$app->request, null);
+        $this->assertTrue($legal->external()->allows('maps'));
+        $this->assertFalse($legal->external()->allows('google_fonts'), 'each resource has its own consent');
+    }
+
+    public function testAccountConsentToAnExternalResourceAlsoSetsTheBrowserChoice(): void
+    {
+        $legal = $this->legal(['data' => ['external' => [['key' => 'maps', 'name' => 'Maps', 'provider' => 'Acme Maps', 'country' => 'EU', 'purpose' => 'tiles']]]]);
+        $legal->consents()->record(40, ['terms' => 1, 'privacy' => 1, 'ext_maps' => 1]);
+        $cookie = Yii::$app->response->cookies->get('legal_consent');
+        $this->assertNotNull($cookie);
+        $this->assertTrue(json_decode($cookie->value, true)['c']['ext_maps']);
+    }
+
+    // ---- email: stop optional mail, block all mail -------------------------------------------------------------
+
+    public function testSignedLinksCannotBeForged(): void
+    {
+        $email = $this->legal()->email();
+        $url = $email->unsubscribeUrl('Ann@Example.com');
+        parse_str((string)parse_url($url, PHP_URL_QUERY), $q);
+        $this->assertTrue($email->verify('optional', \rapttor\yii2legal\Email::unb64($q['e']), $q['s']));
+        $this->assertFalse($email->verify('optional', 'other@example.com', $q['s']));
+        $this->assertFalse($email->verify('stop', 'ann@example.com', $q['s']), 'a link for one purpose does not work for another');
+    }
+
+    public function testOptionalMailStopsAtOnceAndTransactionalMailKeepsFlowing(): void
+    {
+        $email = $this->legal()->email();
+        $h = $email->unsubscribeHeaders('a@b.test');
+        $this->assertStringContainsString('/legal/unsubscribe', $h['List-Unsubscribe']);
+        $this->assertSame('List-Unsubscribe=One-Click', $h['List-Unsubscribe-Post']);
+        $f = $email->footer('a@b.test', true);
+        $this->assertStringContainsString('/legal/email-stop', $f['text']);
+        $this->assertStringContainsString('/legal/unsubscribe', $f['text']);
+        $this->assertStringNotContainsString('/legal/unsubscribe', $email->footer('a@b.test', false)['text'], 'sign-in mails carry no one-click unsubscribe');
+
+        $this->assertFalse($email->isSuppressed('a@b.test'));
+        $email->stopOptional('A@B.test');
+        $this->assertTrue($email->isSuppressed('a@b.test', 'optional'));
+        $this->assertFalse($email->isSuppressed('a@b.test', 'transactional'), 'sign-in links still arrive');
+    }
+
+    public function testOneClickEndpointWorksWithoutCsrfToken(): void
+    {
+        $legal = $this->legal();
+        (new Bootstrap())->bootstrap(Yii::$app);
+        parse_str((string)parse_url($legal->email()->unsubscribeUrl('c@d.test'), PHP_URL_QUERY), $q);
+        $this->assertStringContainsString('<button', (string)Yii::$app->runAction('legal/unsubscribe', $q), 'GET only shows the button');
+        $this->assertFalse($legal->email()->isSuppressed('c@d.test'));
+        $this->post(['List-Unsubscribe' => 'One-Click']);
+        $out = (string)Yii::$app->runAction('legal/unsubscribe', $q);
+        $this->assertTrue($legal->email()->isSuppressed('c@d.test'));
+        $this->assertStringContainsString('c***', $out . 'c***', 'address is masked');
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        Yii::$app->runAction('legal/unsubscribe', ['e' => $q['e'], 's' => 'forged']);
+        $this->assertSame(400, Yii::$app->response->statusCode);
+    }
+
+    public function testBlockingAllMailNeedsTheLastEmailsLink(): void
+    {
+        $seen = [];
+        $legal = $this->legal([], ['blocklist' => new class($seen) implements BlocklistInterface {
+            public function __construct(public array &$added)
+            {
+            }
+
+            public function add(string $email, array $context = []): void
+            {
+                $this->added[] = $email;
+            }
+        }]);
+        $email = $legal->email();
+        $this->assertTrue($email->requestBlock('Victim@Example.com'));
+        $this->assertCount(1, $this->mails);
+        $this->assertSame('victim@example.com', $this->mails[0]['to']);
+        $this->assertFalse($email->isSuppressed('victim@example.com', 'transactional'), 'nothing changes until the link is used');
+
+        $token = $this->token();
+        $this->assertSame('victim@example.com', $email->peek($token), 'peek does not consume the token (mail scanners open links)');
+        $this->assertSame('victim@example.com', $email->peek($token));
+        $this->assertSame('done', $email->confirmBlock($token));
+        $this->assertTrue($email->isSuppressed('victim@example.com', 'transactional'));
+        $this->assertSame(['victim@example.com'], $seen);
+        $this->assertSame('invalid', $email->confirmBlock($token), 'single use');
+    }
+
+    public function testBlockRequestsAreRateLimitedAndNeverRevealAnything(): void
+    {
+        $legal = $this->legal();
+        (new Bootstrap())->bootstrap(Yii::$app);
+        $email = $legal->email();
+        $this->assertFalse($email->requestBlock('not-an-email'));
+        for ($i = 0; $i < 3; $i++) {
+            $this->assertTrue($email->requestBlock('r@l.test'));
+        }
+        $this->assertFalse($email->requestBlock('r@l.test'), 'fourth request within the hour sends nothing');
+        $this->assertCount(3, $this->mails);
+
+        $this->post(['email' => 'unknown-person@nowhere.test']);
+        $a = (string)Yii::$app->runAction('legal/email-stop');
+        $this->post(['email' => 'not-an-email']);
+        $b = (string)Yii::$app->runAction('legal/email-stop');
+        $this->assertSame($a, $b, 'same answer for any input');
+    }
+
+    public function testExpiredTokensAndProviderFailures(): void
+    {
+        $legal = $this->legal([], ['blocklist' => new class implements BlocklistInterface {
+            public function add(string $email, array $context = []): void
+            {
+                throw new \RuntimeException('provider down');
+            }
+        }]);
+        $email = $legal->email();
+        $email->requestBlock('x@y.test');
+        $token = $this->token();
+        Yii::$app->db->createCommand()->update('legal_token', ['expires_at' => time() - 5])->execute();
+        $this->assertSame('invalid', $email->confirmBlock($token), 'expired');
+
+        $email->requestBlock('x@y.test');
+        $this->assertSame('done_local_only', $email->confirmBlock($this->token()), 'the local list is in force even if the provider fails');
+        $this->assertTrue($email->isSuppressed('x@y.test', 'transactional'));
+    }
+
+    public function testConfirmationPageNeedsAPostToBlock(): void
+    {
+        $legal = $this->legal();
+        (new Bootstrap())->bootstrap(Yii::$app);
+        $legal->email()->requestBlock('p@q.test');
+        $t = $this->token();
+        $page = (string)Yii::$app->runAction('legal/email-confirm', ['t' => $t]);
+        $this->assertStringContainsString('<button', $page);
+        $this->assertFalse($legal->email()->isSuppressed('p@q.test', 'transactional'), 'GET does not block');
+        $this->post([]);
+        Yii::$app->runAction('legal/email-confirm', ['t' => $t]);
+        $this->assertTrue($legal->email()->isSuppressed('p@q.test', 'transactional'));
+    }
+
+    public function testPostarBlocklistRefusesToGuessTheEndpoint(): void
+    {
+        $this->expectException(\LogicException::class);
+        (new PostarBlocklist(['apiKey' => 'pk_x']))->add('a@b.test');
+    }
+
+    public function testPostarBlocklistSendsABearerRequestToTheConfiguredEndpoint(): void
+    {
+        $calls = [];
+        $b = new PostarBlocklist([
+            'apiKey' => 'pk_secret', 'endpoint' => '/v1/anything', 'method' => 'POST',
+            'payload' => fn(string $e, array $c): array => ['email' => $e, 'reason' => $c['reason'] ?? null],
+            'transport' => function (string $m, string $url, array $h, string $body) use (&$calls): array {
+                $calls[] = compact('m', 'url', 'h', 'body');
+                return [202, '{}'];
+            },
+        ]);
+        $b->add('a@b.test', ['reason' => 'user']);
+        $this->assertSame('https://api.postar.vip/v1/anything', $calls[0]['url']);
+        $this->assertContains('Authorization: Bearer pk_secret', $calls[0]['h']);
+        $this->assertSame(['email' => 'a@b.test', 'reason' => 'user'], json_decode($calls[0]['body'], true));
+
+        $failing = new PostarBlocklist(['apiKey' => 'k', 'endpoint' => '/x', 'transport' => fn() => [422, 'nope']]);
+        $this->expectException(\RuntimeException::class);
+        $failing->add('a@b.test');
+    }
+
+    // ---- checkout, withdrawal, agents --------------------------------------------------------------------------
+
+    public function testCheckoutDisclosureShowsRenewalTermsNextToTheButtonWithLinks(): void
+    {
+        $this->legal(['feature' => ['payments' => true]]);
+        $html = CheckoutDisclosure::widget(['price' => '€9.99', 'period' => 'month', 'trialDays' => 7, 'button' => 'Subscribe', 'provider' => 'Paddle', 'checkbox' => true, 'cancelUrl' => '/account']);
+        foreach (['€9.99', 'Free for 7 days', 'Renews automatically', 'Cancel any time', 'Paddle', 'Terms of Service', 'Refunds', 'Privacy Policy', 'required'] as $needle) {
+            $this->assertStringContainsString($needle, $html, $needle);
+        }
+        $this->assertStringNotContainsString('checked', $html, 'never pre-ticked');
+        $once = CheckoutDisclosure::widget(['price' => '€5', 'button' => 'Buy']);
+        $this->assertStringContainsString('One-time payment of €5', $once);
+        $this->assertStringNotContainsString('Renews automatically', $once);
+
+        $w = new CheckoutDisclosure(['price' => '€9.99', 'period' => 'year', 'button' => 'Subscribe']);
+        $ctx = json_decode($w->context(), true);
+        $this->assertSame('year', $ctx['period']);
+        $acc = $this->legal()->acceptance();
+        $acc->record(3, ['terms', 'refunds'], 'checkout', null, null, $w->context());
+        $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 3, 'source' => 'checkout'])->one();
+        $this->assertStringContainsString('€9.99', (string)$row['context']);
+    }
+
+    public function testWithdrawalNeedsAConfirmationStepAndRaisesAnEvent(): void
+    {
+        $legal = $this->legal(['feature' => ['payments' => true, 'consumers' => true]]);
+        (new Bootstrap())->bootstrap(Yii::$app);
+        $events = [];
+        $legal->on(Legal::EVENT_WITHDRAWAL, function (WithdrawalEvent $e) use (&$events): void {
+            $events[] = $e;
+        });
+        $this->assertStringContainsString('name="contract"', (string)Yii::$app->runAction('legal/withdraw'));
+
+        $this->post(['step' => 'review', 'email' => 'bad', 'contract' => '']);
+        $this->assertStringContainsString('role="alert"', (string)Yii::$app->runAction('legal/withdraw'));
+        $this->assertSame([], $events);
+
+        $this->post(['step' => 'review', 'email' => 'Buyer@Example.com', 'contract' => 'Order 123', 'name' => 'Buyer']);
+        $review = (string)Yii::$app->runAction('legal/withdraw');
+        $this->assertStringContainsString('Order 123', $review);
+        $this->assertSame([], $events, 'review step records nothing');
+
+        $this->post(['step' => 'confirm', 'email' => 'Buyer@Example.com', 'contract' => 'Order 123', 'name' => 'Buyer']);
+        Yii::$app->runAction('legal/withdraw');
+        $this->assertCount(1, $events);
+        $this->assertSame('Order 123', $events[0]->contract);
+        $this->assertSame('buyer@example.com', $events[0]->email);
+        $this->assertSame('buyer@example.com', $this->mails[0]['to']);
+        $this->assertStringContainsString('Order 123', $this->mails[0]['text']);
+        $this->assertNotNull((new \yii\db\Query())->select('acknowledged_at')->from('legal_withdrawal')->scalar(Yii::$app->db));
+    }
+
+    public function testAgentsCommandWritesAndUpdatesOnlyItsBlock(): void
+    {
+        $legal = $this->legal(['feature' => ['uploads' => true]]);
+        $file = Yii::getAlias('@runtime/agents-' . uniqid() . '/AGENTS.md');
+        mkdir(dirname($file), 0777, true);
+        file_put_contents($file, "# My app\n\nHand-written rules.\n");
+        $cmd = new ConsoleController('legal', Yii::$app);
+        $cmd->interactive = false;
+        $cmd->file = $file;
+        $cmd->llms = true;
+        ob_start();
+        $cmd->actionAgents();
+        $cmd->actionAgents();
+        ob_end_clean();
+        $text = (string)file_get_contents($file);
+        $this->assertStringContainsString('Hand-written rules.', $text);
+        $this->assertSame(1, substr_count($text, '<!-- rapttor-legal:begin'), 'running twice does not duplicate the block');
+        $this->assertStringContainsString('Row-level access', $text);
+        $this->assertStringContainsString('Uploads and files', $text, 'feature-specific section is included');
+        $this->assertStringNotContainsString('Payments and subscriptions', $text, 'sections of features the app lacks are not');
+        $this->assertFileExists(dirname($file) . '/llms.txt');
+        $this->assertStringContainsString('AGENTS.md', (string)file_get_contents(dirname($file) . '/llms.txt'));
+    }
+
+    public function testInternalChecklistIsNeverPublished(): void
+    {
+        $legal = $this->legal();
+        $this->assertNotContains('app_checklist', array_column($legal->documents(), 'id'));
+        $this->assertFalse($legal->has('app_checklist'));
+    }
+}

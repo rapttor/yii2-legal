@@ -88,6 +88,50 @@ When a document's MAJOR or MINOR version changes (a PATCH wording fix never asks
 
 For sites with `feature.analytics` or `feature.ads`: put `<?= rapttor\yii2legal\widgets\CookieBanner::widget() ?>` once in the layout (equal "Accept all" / "Reject all" buttons; nothing is stored before the visitor acts) and `<?= rapttor\yii2legal\widgets\CookieSettingsLink::widget() ?>` in the footer. Gate your scripts: `if (Yii::$app->legal->consent()->allows('analytics')) { ... }`. Global Privacy Control (`Sec-GPC: 1`) counts as a refusal and hides the banner. The choice lives in the `legal_consent` cookie for 180 days; list it in your cookie table.
 
+## Consents checklist (after sign-in)
+
+Instead of one tick box, keep a **versioned list of consents with the account**: the documents in `acceptDocs`, the age confirmation (`feature.age_gate`), the upload and copyright responsibility (`feature.uploads`), product emails (`feature.marketing`), each third-party resource in `data.external`, plus your own in `consents`. Required items block use; optional ones are asked once per version and may be declined; a new version of an item asks again.
+
+```php
+'as legalConsents' => ['class' => rapttor\yii2legal\filters\ConsentGate::class],      // sends signed-in users (anonymous accounts too) to /legal/consents
+// where the answers live (default: table legal_consent; or a JSON column of your user model):
+'consentStore' => ['class' => rapttor\yii2legal\stores\JsonAttributeConsentStore::class, 'modelClass' => app\models\User::class, 'attribute' => 'consents'],
+Yii::$app->legal->consents()->granted($user->id, 'uploads');                              // check a consent in code
+```
+
+Run `php yii migrate` once: the package registers its migrations (acceptance log, consents, email suppression, withdrawals).
+
+## Third-party resources and fonts
+
+Self-host fonts, scripts and icons. What must come from another server is declared in the config and loaded only with consent:
+
+```php
+'data' => ['external' => [['key' => 'maps', 'name' => 'Maps', 'provider' => 'Acme Maps', 'country' => 'EU', 'purpose' => 'map tiles']]],
+if (Yii::$app->legal->external()->allows('maps')) { /* load it */ } else { /* fallback */ }
+```
+The cookie banner and settings page list each item with the note that the IP address is sent; the Privacy and Cookie Policies show the same table.
+
+## Email: stop optional mail, block all mail
+
+```php
+$email = Yii::$app->legal->email();
+if ($email->isSuppressed($to, 'optional')) { return; }                   // news, tips: respect the one-click stop
+$headers = $email->unsubscribeHeaders($to);                              // List-Unsubscribe + List-Unsubscribe-Post (RFC 8058), optional mail only
+$footer = $email->footer($to, optional: true);                           // ['html' =>, 'text' =>]: "stop all email from <service>" in EVERY email
+```
+Optional mail stops with one click, at once. "Stop all email" asks for the address, sends one last email with a single-use link (valid 24 hours; a page with a button, so mail scanners cannot trigger it), and only that confirmation adds the address to the no-send list, locally and at your email provider through `blocklist`. Sign-in and security emails carry only the footer link. Wire your mailer once:
+
+```php
+'mailSender' => fn($to, $subject, $html, $text, $headers) => Yii::$app->postar->send([...]),   // default: the Yii mailer component
+'blocklist' => ['class' => rapttor\yii2legal\blocklist\PostarBlocklist::class, 'endpoint' => '/v1/...'],   // endpoint from Postar's docs (not public yet)
+```
+
+## Pay button, withdrawal, instructions for AI agents
+
+- `CheckoutDisclosure::widget(['price' => '€9.99', 'period' => 'month', 'button' => 'Subscribe', 'checkbox' => true])` renders the renewal terms **next to the pay button** with links to Terms, Refunds and Privacy; store `$widget->context()` with the acceptance record (keep it at least three years).
+- `WithdrawalLink::widget()` and `/legal/withdraw`: the EU withdrawal function (from 19 June 2026) with a confirmation step, an acknowledgement email and `Legal::EVENT_WITHDRAWAL` for your refund handling.
+- `php yii legal/agents --llms` writes the security and compliance checklist for AI coding agents, filtered to your app's features, into `AGENTS.md` and `llms.txt`. Re-run it when features change.
+
 ## Claims, structured tables, review of updates
 
 - **Claims:** the documents state things about your product (account deletion, MFA, response times...). `php yii legal/claims` lists them; confirm each one that is true with `'confirmedClaims' => ['mfa', ...]`; `php yii legal/check` fails while a relevant claim is unconfirmed (`--skipClaims` ignores that). Fix the product or the feature flags instead of confirming something false.

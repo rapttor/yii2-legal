@@ -26,7 +26,8 @@ final class CookieBanner extends Widget
         if (!$consent->needsBanner()) {
             return '';
         }
-        $names = array_map(static fn(string $c): string => mb_strtolower($legal->t("consent.$c")), $consent->categories());
+        $ext = array_column($legal->external()->items(), null, 'key');
+        $names = array_map(static fn(string $c): string => str_starts_with($c, 'ext_') ? ($ext[substr($c, 4)]['name'] ?? $c) : mb_strtolower($legal->t("consent.$c")), $consent->categories());
         $settings = Url::to(['/' . $legal->routePrefix . '/consent', 'return' => Yii::$app->request->url]);
         $form = Html::beginForm(['/' . $legal->routePrefix . '/consent'], 'post')
             . Html::hiddenInput('return', Yii::$app->request->url)

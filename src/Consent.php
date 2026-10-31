@@ -10,7 +10,7 @@ use yii\web\Cookie;
 /**
  * Visitor's cookie choices. Nothing is stored before the visitor acts; Global Privacy Control (header Sec-GPC: 1) counts as
  * a refusal of every non-essential category and the banner is not shown. Categories exist only for features the site has:
- * `analytics` (feature.analytics) and `advertising` (feature.ads).
+ * `analytics` (feature.analytics), `advertising` (feature.ads) and `ext_<key>` for each third-party resource in `data.external`.
  *
  *     if (Yii::$app->legal->consent()->allows('analytics')) { ... load analytics ... }
  */
@@ -30,6 +30,9 @@ final class Consent
         }
         if (!empty($f['ads'])) {
             $out[] = 'advertising';
+        }
+        foreach ($this->legal->external()->items() as $it) {
+            $out[] = 'ext_' . $it['key'];
         }
         return $out;
     }
@@ -69,6 +72,16 @@ final class Consent
     public function needsBanner(): bool
     {
         return $this->categories() !== [] && !$this->gpc() && $this->decision() === null;
+    }
+
+    /** Update some choices and keep the others (used when an account's consents are saved). @param array<string,bool> $choices category (for example "ext_maps") => granted */
+    public function merge(array $choices): void
+    {
+        $new = $this->decision() ?? [];
+        foreach ($choices as $category => $granted) {
+            $new[$category] = (bool)$granted;
+        }
+        $this->save($new);
     }
 
     /** Store the decision in a cookie (call only in response to a visitor action). @param array<string,bool> $choices */

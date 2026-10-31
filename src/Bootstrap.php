@@ -29,6 +29,11 @@ final class Bootstrap implements BootstrapInterface
             $app->getUrlManager()->addRules([
                 "$p/accept" => "$p/accept",
                 "$p/consent" => "$p/consent",
+                "$p/consents" => "$p/consents",
+                "$p/unsubscribe" => "$p/unsubscribe",
+                "$p/email-stop" => "$p/email-stop",
+                "$p/email-confirm" => "$p/email-confirm",
+                "$p/withdraw" => "$p/withdraw",
                 "$p/<lang:($tags)>/<doc:[a-z0-9-]+>" => "$p/view",
                 "$p/<lang:($tags)>" => "$p/index",
                 "$p/<doc:[a-z0-9-]+>" => "$p/view",
