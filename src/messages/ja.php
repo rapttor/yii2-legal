@@ -115,4 +115,5 @@ return [
     'consent.external_hint' => '{provider}（{country}）は、読み込み時にお客様のIPアドレスを受け取ります。',
     'signup.button' => 'アカウントを作成してサインイン',
     'signup.error' => '続行するには、必須項目をそれぞれ確認してください。',
+    'index.title' => '法的情報',
 ];

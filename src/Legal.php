@@ -150,6 +150,11 @@ class Legal extends Component
         $c = $this->effectiveConfig();
         $f = $c['feature'] ?? [];
         $h = [];
+        foreach ($this->extraPages as $key => $e) {
+            if (self::byLanguage($e['title'] ?? null, 'en') === null || self::byLanguage($e['url'] ?? null, 'en', true) === null) {
+                $h[] = "extraPages['$key'] needs a title and a url (a string, a route array, or a language => value map).";
+            }
+        }
         $pol = $c['policy'] ?? [];
         if (trim((string)($pol['activities'] ?? '')) === '' && empty($f['gambling'])) {
             $h[] = 'policy.activities is empty: ask the owner what the app does that some countries prohibit (gambling, alcohol, tobacco, cannabis, adult, dating, lgbtq, crypto, vpn, weapons, pharmacy; sanctions is recommended for every app). `php yii legal/restrictions` lists the tags.';
@@ -325,6 +330,94 @@ class Legal extends Component
     public function documents(?string $lang = null): array
     {
         return $this->library()->published($this->effectiveConfig(), $lang ?? $this->currentLanguage(), $this->publishDrafts);
+    }
+
+    /**
+     * App-specific pages to list next to the documents (attribution, a special policy, game credits ...), so the app does not need
+     * a second list of legal pages. Key = a short id. Each entry:
+     *
+     *     'attribution' => [
+     *         'title' => ['en' => 'Attribution', 'sh' => 'Zasluge'],      // string, or language => title
+     *         'url' => ['en' => '/attribution', 'sh' => '/sh/zasluge'],   // language => relative path, absolute http(s) URL or route array
+     *         // 'url' => ['/site/attribution']                           // a route array (key 0) is the same for every language
+     *         // 'url' => '/attribution'                                  // so is a string
+     *         // 'position' => 'before'                                   // default 'after' the documents
+     *         // 'languages' => ['en', 'sh']                              // list it only in these languages (default: wherever a title and url resolve)
+     *     ],
+     *
+     * A language without its own title or url falls back to English, then to the first one given.
+     *
+     * @var array<string,array<string,mixed>>
+     */
+    public array $extraPages = [];
+
+    /** Show the list of all legal pages (documents and `extraPages`) under each document, so an app needs no second list. */
+    public bool $showNav = true;
+
+    /**
+     * All pages for a list: the published documents plus `extraPages`, in display order.
+     *
+     * @return list<array{id:string,title:string,url:string,kind:string,lang:string}> kind is `document` or `extra`
+     */
+    public function links(?string $lang = null): array
+    {
+        $lang ??= $this->currentLanguage();
+        $before = $after = [];
+        foreach ($this->extraPages as $key => $e) {
+            $item = $this->extraLink((string)$key, (array)$e, $lang);
+            if ($item !== null) {
+                if (($e['position'] ?? 'after') === 'before') {
+                    $before[] = $item;
+                } else {
+                    $after[] = $item;
+                }
+            }
+        }
+        $docs = array_map(fn(array $d): array => ['id' => $d['id'], 'title' => $d['title'], 'url' => $this->url($d['id'], $lang), 'kind' => 'document', 'lang' => $d['lang']], $this->documents($lang));
+        return array_merge($before, $docs, $after);
+    }
+
+    /** @param array<string,mixed> $e @return array{id:string,title:string,url:string,kind:string,lang:string}|null */
+    private function extraLink(string $key, array $e, string $lang): ?array
+    {
+        if (isset($e['languages']) && !in_array($lang, (array)$e['languages'], true)) {
+            return null;
+        }
+        $title = self::byLanguage($e['title'] ?? null, $lang);
+        $url = self::byLanguage($e['url'] ?? null, $lang, true);
+        if (!is_string($title) || trim($title) === '' || $url === null) {
+            return null;
+        }
+        if (is_array($url)) {
+            $href = Url::to($url);
+        } elseif (preg_match('~^https?://~i', $url) || str_starts_with($url, '/') || str_starts_with($url, '#')) {
+            $href = preg_match('~^https?://~i', $url) ? $url : Url::to($url);
+        } else {
+            return null; // javascript:, data:, mailto: and bare words are not links to pages
+        }
+        return ['id' => $key, 'title' => $title, 'url' => $href, 'kind' => 'extra', 'lang' => $lang];
+    }
+
+    /** Pick the value for a language from a string, a route array (key 0), or a language => value map. */
+    private static function byLanguage(mixed $v, string $lang, bool $routeAllowed = false): string|array|null
+    {
+        if (is_string($v)) {
+            return $v;
+        }
+        if (!is_array($v) || $v === []) {
+            return null;
+        }
+        if ($routeAllowed && array_key_exists(0, $v)) {
+            return $v;
+        }
+        $base = explode('-', $lang)[0];
+        foreach ([$lang, $base, 'en'] as $k) {
+            if (isset($v[$k])) {
+                return is_array($v[$k]) && !$routeAllowed ? null : $v[$k];
+            }
+        }
+        $first = reset($v);
+        return is_string($first) || ($routeAllowed && is_array($first)) ? $first : null;
     }
 
     public function has(string $id, ?string $lang = null): bool

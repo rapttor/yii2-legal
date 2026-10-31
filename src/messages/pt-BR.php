@@ -115,4 +115,5 @@ Este é o último e-mail que você receberá de nós. Se não foi você quem ped
     'consent.external_hint' => '{provider} ({country}) recebe seu endereço IP ao ser carregado.',
     'signup.button' => 'Criar conta e entrar',
     'signup.error' => 'Confirme cada item obrigatório para continuar.',
+    'index.title' => 'Informações legais',
 ];

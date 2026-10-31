@@ -725,4 +725,42 @@ final class NewFeaturesTest extends TestCase
         $this->assertStringNotContainsString(', Ukraine,', ', ' . $hint . ',', 'a regional embargo must not name the whole country');
         $this->assertStringContainsString('Cuba', $hint);
     }
+
+    public function testAppSpecificPagesJoinTheLegalList(): void
+    {
+        $legal = $this->legal([], ['languages' => ['en', 'sh'], 'publishDrafts' => true, 'extraPages' => [
+            'attribution' => ['title' => ['en' => 'Attribution', 'sh' => 'Zasluge'], 'url' => ['en' => '/attribution', 'sh' => '/sh/zasluge']],
+            'credits' => ['title' => 'Game credits', 'url' => ['/site/credits'], 'position' => 'before'],
+            'ext' => ['title' => 'Partner', 'url' => 'https://partner.example/terms'],
+            'bad' => ['title' => 'Evil', 'url' => 'javascript:alert(1)'],
+            'only-sh' => ['title' => 'Samo', 'url' => '/samo', 'languages' => ['sh']],
+            'broken' => ['title' => 'No url'],
+        ]]);
+        $en = $legal->links('en');
+        $ids = array_column($en, 'id');
+        $this->assertSame('credits', $ids[0], "position 'before' comes first");
+        $this->assertSame('attribution', $ids[count($ids) - 2], 'extras come after the documents, in the order given');
+        $this->assertSame('ext', end($ids));
+        $this->assertNotContains('bad', $ids, 'unsafe schemes are not links');
+        $this->assertNotContains('broken', $ids);
+        $this->assertNotContains('only-sh', $ids, 'languages limits where a page is listed');
+        $by = array_column($en, null, 'id');
+        $this->assertStringEndsWith('/attribution', $by['attribution']['url']);
+        $this->assertSame('https://partner.example/terms', $by['ext']['url']);
+        $this->assertSame('extra', $by['credits']['kind']);
+        $sh = array_column($legal->links('sh'), null, 'id');
+        $this->assertSame('Zasluge', $sh['attribution']['title']);
+        $this->assertStringEndsWith('/sh/zasluge', $sh['attribution']['url']);
+        $this->assertSame('Game credits', $sh['credits']['title'], 'a plain string title is used in every language');
+        $this->assertArrayHasKey('only-sh', $sh);
+        $html = \rapttor\yii2legal\widgets\LegalLinks::widget();
+        $this->assertStringContainsString('Attribution', $html);
+        $this->assertStringNotContainsString('Attribution', \rapttor\yii2legal\widgets\LegalLinks::widget(['extras' => false]));
+        $this->assertStringContainsString('needs a title and a url', implode(' ', $legal->hints()));
+        (new Bootstrap())->bootstrap(Yii::$app);
+        $page = (string)Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'en']);
+        $this->assertStringContainsString('class="legal-nav"', $page, 'one list of all legal pages under each document');
+        $this->assertStringContainsString('Attribution', $page);
+        $this->assertStringContainsString('aria-current="page"', $page);
+    }
 }

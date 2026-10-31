@@ -115,4 +115,5 @@ Ovo je posljednja e-poruka koju ćete od nas primiti. Ako niste tražili, zanema
     'consent.external_hint' => '{provider} ({country}) prima vašu IP adresu prilikom učitavanja.',
     'signup.button' => 'Kreirajte nalog i prijavite se',
     'signup.error' => 'Potvrdite svaku obaveznu stavku da biste nastavili.',
+    'index.title' => 'Pravno',
 ];

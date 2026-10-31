@@ -115,4 +115,5 @@ Dit is de laatste e-mail die u van ons ontvangt. Heeft u dit niet verzocht, nege
     'consent.external_hint' => '{provider} ({country}) ontvangt uw IP-adres zodra het wordt geladen.',
     'signup.button' => 'Account aanmaken en inloggen',
     'signup.error' => 'Bevestig elk verplicht onderdeel om door te gaan.',
+    'index.title' => 'Juridisch',
 ];

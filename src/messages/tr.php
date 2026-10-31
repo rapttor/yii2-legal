@@ -115,4 +115,5 @@ Bu, sizden alacağınız son e-posta olacak. Talep etmediyseniz bu e-postayı yo
     'consent.external_hint' => '{provider} ({country}), yüklendiğinde IP adresinizi alır.',
     'signup.button' => 'Hesap oluştur ve oturum aç',
     'signup.error' => 'Devam etmek için lütfen zorunlu her maddeyi onaylayın.',
+    'index.title' => 'Yasal bilgiler',
 ];

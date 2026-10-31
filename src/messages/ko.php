@@ -115,4 +115,5 @@ return [
     'consent.external_hint' => '로드할 때 IP 주소가 {provider}({country})에 전달됩니다.',
     'signup.button' => '계정 만들기 및 로그인',
     'signup.error' => '계속하시려면 필수 항목을 각각 확인해 주십시오.',
+    'index.title' => '법적 고지',
 ];

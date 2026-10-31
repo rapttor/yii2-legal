@@ -115,4 +115,5 @@ Questa sarà l\'ultima e-mail che riceverà da noi. Se non ha fatto richiesta, i
     'consent.external_hint' => 'Al caricamento, {provider} ({country}) riceve l\'indirizzo IP.',
     'signup.button' => 'Crea account e accedi',
     'signup.error' => 'Per continuare, occorre confermare ciascuna voce obbligatoria.',
+    'index.title' => 'Note legali',
 ];

@@ -115,4 +115,5 @@ return [
     'consent.external_hint' => 'लोड होने पर {provider} ({country}) को आपका IP पता मिलता है।',
     'signup.button' => 'खाता बनाएँ और साइन इन करें',
     'signup.error' => 'आगे बढ़ने के लिए कृपया हर आवश्यक बिंदु की पुष्टि करें।',
+    'index.title' => 'कानूनी जानकारी',
 ];

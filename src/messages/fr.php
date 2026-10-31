@@ -115,4 +115,5 @@ Ceci est le dernier e-mail que vous recevrez de notre part. Si vous n\'avez rien
     'consent.external_hint' => '{provider} ({country}) reçoit votre adresse IP lors du chargement.',
     'signup.button' => 'Créer le compte et se connecter',
     'signup.error' => 'Veuillez confirmer chaque élément obligatoire pour continuer.',
+    'index.title' => 'Informations légales',
 ];

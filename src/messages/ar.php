@@ -115,4 +115,5 @@ return [
     'consent.external_hint' => '{provider} ({country}) يتلقى عنوان IP الخاص بك عند التحميل.',
     'signup.button' => 'إنشاء الحساب وتسجيل الدخول',
     'signup.error' => 'يرجى تأكيد كل بند إلزامي للمتابعة.',
+    'index.title' => 'المعلومات القانونية',
 ];

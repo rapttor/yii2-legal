@@ -115,4 +115,5 @@ To jest ostatnia wiadomość, jaką otrzymają Państwo od nas. Jeśli wniosku n
     'consent.external_hint' => 'Adres IP zostanie przesłany do {provider} ({country}) w chwili wczytania.',
     'signup.button' => 'Utwórz konto i zaloguj się',
     'signup.error' => 'Aby kontynuować, potwierdź każdą wymaganą pozycję.',
+    'index.title' => 'Informacje prawne',
 ];

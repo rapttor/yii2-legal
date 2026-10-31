@@ -115,4 +115,5 @@ return [
     'consent.external_hint' => '{provider}（{country}）在加载时会接收您的IP地址。',
     'signup.button' => '创建账户并登录',
     'signup.error' => '请确认每个必填项以继续。',
+    'index.title' => '法律信息',
 ];

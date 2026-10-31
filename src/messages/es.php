@@ -115,4 +115,5 @@ Este es el último correo que recibirá de nosotros. Si no lo ha solicitado, ign
     'consent.external_hint' => '{provider} ({country}) recibe su dirección IP al cargarse.',
     'signup.button' => 'Crear cuenta e iniciar sesión',
     'signup.error' => 'Confirme cada elemento obligatorio para continuar.',
+    'index.title' => 'Información legal',
 ];

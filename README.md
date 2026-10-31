@@ -72,6 +72,24 @@ Link to the Terms and Privacy Policy at sign-up and checkout. Documents that you
 - **Available languages** (drafts until a native-speaking lawyer reviews them; `publishDrafts` shows them): English, **Balkan `sh`** (one Latin, ijekavian text for Bosnia, Croatia, Montenegro and Serbia; the tags sr, hr, bs, cnr and sr-Cyrl are aliases of it), German, French, Spanish, Brazilian Portuguese, Italian, Polish, Dutch, Turkish, Ukrainian, Russian, Arabic, Hindi, Japanese, Korean and Simplified Chinese. `law.jurisdiction` (`rs`, `hr`, `ba`, `me`, `gb`, `de`) supplies governing law and authority independently of the language.
 - **The language strip**: every legal page and consent screen shows one row at the top, flag above a short language name (the Balkan language shows the region's outline in the text colour instead of a flag, no national symbol). `LanguageSwitcher::widget(['compact' => true, 'flags' => true])` makes it anywhere; with `'sameRoute' => true` the links keep the current page and add `?lang=xx` (the consent screens and the sign-up step), and the choice is remembered in the `legal_lang` cookie (preference, 1 year: add it to your cookie list). The visitor's language choice does not depend on the application's language. Put the strip outside a narrow column so every language fits in one row (it scrolls sideways on a phone).
 
+## Your own legal pages in the same list
+
+Apps often have pages that belong with the legal documents: an attribution page, a special policy, game credits. Register them once and they appear in the same lists as the documents (the legal index, the footer `LegalLinks`, and the list under every document), with the language strip on top, so you need no second "legal pages" list:
+
+```php
+'legal' => [
+    'class' => rapttor\yii2legal\Legal::class,
+    'extraPages' => [
+        'attribution' => [
+            'title' => ['en' => 'Attribution', 'sh' => 'Zasluge', 'de' => 'Quellenangaben'],        // a string works for every language
+            'url' => ['en' => '/attribution', 'sh' => '/sh/zasluge', 'de' => '/de/quellen'],       // language => relative path, http(s) URL or route array
+        ],
+        'credits' => ['title' => 'Game credits', 'url' => ['/site/credits'], 'position' => 'before'],   // a route array is the same for every language
+    ],
+],
+```
+A language without its own title or url falls back to English, then to the first one given. `languages` limits where a page is listed, `position` is `after` (default) or `before` the documents. Only relative paths, route arrays and `http(s)` URLs become links. `Yii::$app->legal->links($lang)` returns the whole list (`id`, `title`, `url`, `kind` = `document` or `extra`); `LegalLinks::widget(['extras' => false])` leaves the extras out, and `'showNav' => false` on the component hides the list under each document. The pages themselves stay yours: write them in your app and handle their languages there.
+
 ## Acceptance log and re-consent
 
 Keep proof of who agreed to which version. Run the migration once (`php yii migrate`; the package registers its migration namespace) and record acceptance when a user signs up:
@@ -233,7 +251,7 @@ php yii legal/request-close 12 --status=done --note="exported"
 
 ## Options (`Legal`)
 
-`config`, `configFile`, `routePrefix` (`legal`), `signupIntro`, `requestDueDays`, `requestsPerHour`, `metadataTable` / `metadataKey` / `metadataRemoteTable`, `languageParam` / `languageCookie`, `consentStore`, `consents`, `language` (defaults to app language, English fallback), `cache` (`cache` or `null`), `archive`, `archivePath`, `purifier` (extra HTML Purifier options), `libraryRoot` (tests).
+`config`, `configFile`, `routePrefix` (`legal`), `extraPages`, `showNav`, `signupIntro`, `requestDueDays`, `requestsPerHour`, `metadataTable` / `metadataKey` / `metadataRemoteTable`, `languageParam` / `languageCookie`, `consentStore`, `consents`, `language` (defaults to app language, English fallback), `cache` (`cache` or `null`), `archive`, `archivePath`, `purifier` (extra HTML Purifier options), `libraryRoot` (tests).
 
 ## Test
 

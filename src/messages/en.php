@@ -115,4 +115,5 @@ This is the last email you will receive from us. If you did not ask, ignore this
     'consent.external_hint' => '{provider} ({country}) receives your IP address when it loads.',
     'signup.button' => 'Create account and sign in',
     'signup.error' => 'Please confirm each required item to continue.',
+    'index.title' => 'Legal',
 ];

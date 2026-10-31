@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.9.0 (requires rapttor/legal ^2.6)
+- **App-specific pages in the legal lists**: `Legal::$extraPages` (title and url per language, relative paths, route arrays or absolute http(s) URLs; `position`, `languages`), `Legal::links($lang)`, shown in the legal index, in `LegalLinks` (`extras`) and in a new list under each document (`showNav`). `legal/check` hints at incomplete entries. New message `index.title` ("Legal") in all languages.
+
 ## 2.8.8
 - `llms.txt` of this package restructured (read first / what it provides / tests, with links to the new classes); the `llms.txt` that `php yii legal/agents --llms` writes into an app now lists the consent rules, the app's current `policy.activities`, the request form and the language rules.
 

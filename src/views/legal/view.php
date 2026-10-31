@@ -27,4 +27,9 @@ use yii\helpers\Html;
     <footer class="legal-meta">
         <small><?= Html::encode($entry['title']) ?> v<?= Html::encode($entry['version']) ?><?= ($entry['status'] ?? 'reviewed') === 'draft' ? ' (' . Html::encode($legal->t('draft', [], $entry['lang'])) . ')' : '' ?></small>
     </footer>
+    <?php if ($legal->showNav && count($links = $legal->links($entry['lang'])) > 1): ?>
+        <nav class="legal-nav" aria-label="<?= Html::encode($legal->t('index.title', [], $entry['lang'])) ?>">
+            <ul><?php foreach ($links as $l): ?><li><?= Html::a(Html::encode($l['title']), $l['url'], $l['id'] === $entry['id'] ? ['aria-current' => 'page'] : []) ?></li><?php endforeach ?></ul>
+        </nav>
+    <?php endif ?>
 </article>
