@@ -156,7 +156,7 @@ final class Consents
             }
         }
         $this->store()->save((string)$userId, $state);
-        $this->logDocuments($userId, $pending, $answers, $lang, $state);
+        $this->logDocuments($userId, $pending, $answers, $lang, $state, $source);
         if ($cookie !== [] && Yii::$app instanceof \yii\web\Application) {
             $this->legal->consent()->merge($cookie); // the browser follows the account's choice for third-party resources
         }
@@ -174,7 +174,7 @@ final class Consents
     }
 
     /** Documents accepted here also go to the acceptance log (version, language, time, hashed IP) when its table exists. */
-    private function logDocuments(int|string $userId, array $pending, array $answers, string $lang, array $state = []): void
+    private function logDocuments(int|string $userId, array $pending, array $answers, string $lang, array $state = [], string $source = 'consents'): void
     {
         $docs = array_values(array_map(static fn(array $d): string => $d['key'], array_filter($pending, static fn(array $d): bool => $d['kind'] === 'document' && !empty($answers[$d['key']]))));
         if ($docs === [] || !is_numeric($userId)) {
@@ -182,7 +182,7 @@ final class Consents
         }
         try {
             $ctx = json_encode(['lang' => $lang, 'evidence' => array_map(fn(string $id): array => $state[$id]['ev'] ?? [], array_combine($docs, $docs))], JSON_THROW_ON_ERROR);
-            $this->legal->acceptance()->record((int)$userId, $docs, 'consents', null, $lang, $ctx);
+            $this->legal->acceptance()->record((int)$userId, $docs, $source, null, $lang, $ctx);
         } catch (\Throwable $e) {
             Yii::warning('Acceptance log not written: ' . $e->getMessage(), __METHOD__);
         }

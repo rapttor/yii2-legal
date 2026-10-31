@@ -596,6 +596,7 @@ final class NewFeaturesTest extends TestCase
         $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 77, 'document' => 'terms'])->one();
         $this->assertStringContainsString('evidence', (string)$row['context']);
         $this->assertArrayHasKey('ua_hash', $row);
+        $this->assertSame('consents', $row['source']);
     }
 
     public function testPrivacyRequestIsStoredMailedAndRaisesAnEvent(): void

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.6.1
+- The acceptance log records the real source (`signup`, `consents`, ...) of documents accepted in the consents list.
+
 ## 2.6.0 (requires rapttor/legal ^2.5)
 - **`ConsentChecklist` widget**: the consents as separate unticked boxes (`consent[<key>]`) for the sign-in form of a new account, plus `Consents::missingRequired($answers)`: a new account is created only after every required item was ticked on its own, then stored with `consents()->record($user->id, $answers, 'signup')`. The consents page uses the same widget.
 - Screen texts in de, fr, es, pt-BR, it, pl, nl and tr (drafts); the language switcher on consent forms renders as a row.
