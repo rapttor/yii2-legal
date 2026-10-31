@@ -26,6 +26,8 @@ final class LanguageSwitcher extends Widget
     public ?string $doc = null;
     /** Do not render a switcher with a single language. */
     public bool $hideIfSingle = true;
+    /** Link to the page being shown in each language (`?lang=`) instead of to the legal documents: for the consents and request forms. */
+    public bool $sameRoute = false;
     public array $options = ['class' => 'legal-languages'];
 
     public function run(): string
@@ -51,7 +53,7 @@ final class LanguageSwitcher extends Widget
         $items = '';
         foreach ($list as $l) {
             $has = $doc !== null && $legal->document($doc, $l['tag']) !== null && !$legal->document($doc, $l['tag'])['fallback'];
-            $url = $doc !== null && $has ? $legal->url($doc, $l['tag']) : $this->indexUrl($legal, $l['tag']);
+            $url = $this->sameRoute ? \yii\helpers\Url::current(['lang' => $l['tag']]) : ($doc !== null && $has ? $legal->url($doc, $l['tag']) : $this->indexUrl($legal, $l['tag']));
             $a = Html::a(Html::encode($this->labels[$l['tag']] ?? $l['name']), $url, [
                 'hreflang' => $l['tag'], 'lang' => $l['tag'], 'rel' => 'alternate',
             ] + ($l['current'] ? ['aria-current' => 'true'] : []));

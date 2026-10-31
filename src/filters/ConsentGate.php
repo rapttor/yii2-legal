@@ -19,6 +19,9 @@ class ConsentGate extends ActionFilter
     /** Routes (fnmatch patterns) that never redirect. @var list<string> */
     public array $exceptRoutes = ['legal/*', 'site/login', 'site/logout', 'site/error', 'debug/*', 'gii/*'];
 
+    /** Roles or permissions (`Yii::$app->user->can()`) that skip the gate: your own operator accounts. Tenant admins and everybody else are asked. @var list<string> */
+    public array $exceptCan = [];
+
     public function beforeAction($action): bool
     {
         $user = Yii::$app->get('user', false);
@@ -27,6 +30,11 @@ class ConsentGate extends ActionFilter
         }
         foreach ($this->exceptRoutes as $pattern) {
             if (fnmatch($pattern, $action->uniqueId)) {
+                return true;
+            }
+        }
+        foreach ($this->exceptCan as $perm) {
+            if ($user->can($perm)) {
                 return true;
             }
         }

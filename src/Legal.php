@@ -77,6 +77,11 @@ class Legal extends Component
     public string $suppressionTable = '{{%legal_suppression}}';
     public string $tokenTable = '{{%legal_token}}';
     public string $withdrawalTable = '{{%legal_withdrawal}}';
+    public string $requestTable = '{{%legal_request}}';
+    /** Internal due dates (days) per request type; the public pages promise no reply time. Privacy rights: one month is the usual legal limit (GDPR Art. 12(3)); check other laws that apply to you. */
+    public array $requestDueDays = ['access' => 30, 'export' => 30, 'correct' => 30, 'delete' => 30, 'object' => 30];
+    /** Requests accepted per hour from one connection (hashed IP). */
+    public int $requestsPerHour = 5;
     /** HMAC key for signed email links; default: the request cookie validation key. Set a long random value in production. */
     public ?string $secret = null;
     /** Sends an email: fn(string $to, string $subject, string $html, string $text, array $headers): void. Default: the Yii `mailer` component. */
@@ -89,6 +94,8 @@ class Legal extends Component
     public mixed $blocklist = null;
     /** Event raised after a consumer withdraws from a contract (see WithdrawalEvent): process the refund here. */
     public const EVENT_WITHDRAWAL = 'withdrawal';
+    /** Event raised after a privacy or legal request came in (see RequestEvent): alert your admins here. */
+    public const EVENT_REQUEST = 'request';
 
     private ?Library $lib = null;
     /** @var array<string,mixed>|null */
@@ -117,12 +124,18 @@ class Legal extends Component
         return $this->emailService ??= new Email($this);
     }
 
+    public function requests(): Requests
+    {
+        return $this->requestsService ??= new Requests($this);
+    }
+
     public function withdrawal(): Withdrawal
     {
         return $this->withdrawalService ??= new Withdrawal($this);
     }
 
     private ?Withdrawal $withdrawalService = null;
+    private ?Requests $requestsService = null;
     private ?Consents $consentsService = null;
     private ?External $externalService = null;
     private ?Email $emailService = null;
@@ -137,6 +150,9 @@ class Legal extends Component
         $c = $this->effectiveConfig();
         $f = $c['feature'] ?? [];
         $h = [];
+        if (!$this->hasEventHandlers(self::EVENT_REQUEST)) {
+            $h[] = 'Privacy and legal requests (/legal/request) are emailed to the privacy/legal mailbox, but nothing in the app alerts your admins: attach a handler to Legal::EVENT_REQUEST (chat, ticket, backoffice badge) and show Yii::$app->legal->requests()->open() in the backoffice.';
+        }
         if (!empty($f['gambling'])) {
             $h[] = 'feature.gambling is on: the tick box is not real age verification. Check licences for every country you serve and use verified age and identity checks where the law requires them.';
         }

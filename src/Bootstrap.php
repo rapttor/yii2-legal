@@ -34,6 +34,7 @@ final class Bootstrap implements BootstrapInterface
                 "$p/email-stop" => "$p/email-stop",
                 "$p/email-confirm" => "$p/email-confirm",
                 "$p/withdraw" => "$p/withdraw",
+                "$p/request" => "$p/request",
                 "$p/<lang:($tags)>/<doc:[a-z0-9-]+>" => "$p/view",
                 "$p/<lang:($tags)>" => "$p/index",
                 "$p/<doc:[a-z0-9-]+>" => "$p/view",

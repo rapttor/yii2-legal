@@ -63,7 +63,7 @@ final class LegalController extends Controller
         if ($user->isGuest) {
             throw new \yii\web\ForbiddenHttpException('Login required.');
         }
-        $this->selectLanguage($legal, null);
+        $this->selectLanguage($legal, $this->requestedLanguage($legal));
         $return = $this->safeReturn((string)(Yii::$app->request->post('return') ?: $return));
         $pending = $legal->acceptance()->pending((int)$user->id);
         if ($pending === []) {
@@ -125,7 +125,7 @@ final class LegalController extends Controller
         if ($user->isGuest) {
             throw new \yii\web\ForbiddenHttpException('Login required.');
         }
-        $this->selectLanguage($legal, null);
+        $this->selectLanguage($legal, $this->requestedLanguage($legal));
         $return = $this->safeReturn((string)(Yii::$app->request->post('return') ?: $return));
         $pending = $legal->consents()->pending($user->id);
         if ($pending === []) {
@@ -210,6 +210,29 @@ final class LegalController extends Controller
         return $this->render('@rapttor/yii2legal/views/legal/withdraw', ['legal' => $legal, 'v' => $v, 'review' => $step === 'review', 'error' => $error ?? false]);
     }
 
+    /** Public form for privacy and legal requests; the admins are notified (see Requests). */
+    public function actionRequest(): string
+    {
+        $legal = $this->legal();
+        $this->selectLanguage($legal, $this->requestedLanguage($legal));
+        $req = Yii::$app->request;
+        $v = ['type' => (string)$req->post('type', 'access'), 'name' => trim((string)$req->post('name', '')), 'email' => trim((string)$req->post('email', '')), 'message' => trim((string)$req->post('message', ''))];
+        $error = null;
+        if ($req->isPost) {
+            if ((string)$req->post('website', '') !== '') { // honeypot: people leave this empty
+                return $this->message($legal, $legal->t('request.title'), $legal->t('request.done', ['{ref}' => '-']));
+            }
+            $uid = Yii::$app->get('user', false)?->isGuest === false ? (int)Yii::$app->user->id : null;
+            $r = $legal->requests()->submit($v['type'], $v['email'], $v['message'], $v['name'] ?: null, $uid);
+            if ($r['ok']) {
+                return $this->message($legal, $legal->t('request.title'), $legal->t('request.done', ['{ref}' => $r['ref']]));
+            }
+            Yii::$app->response->statusCode = $r['error'] === 'limit' ? 429 : 200;
+            $error = $r['error'];
+        }
+        return $this->render('@rapttor/yii2legal/views/legal/request', ['legal' => $legal, 'v' => $v, 'error' => $error]);
+    }
+
     private function message(Legal $legal, string $title, string $text): string
     {
         return $this->render('@rapttor/yii2legal/views/legal/message', ['legal' => $legal, 'title' => $title, 'text' => $text]);
@@ -225,6 +248,14 @@ final class LegalController extends Controller
     private function safeReturn(string $url): string
     {
         return str_starts_with($url, '/') && !str_starts_with($url, '//') && !str_contains($url, '\\') ? $url : '/';
+    }
+
+    /** `?lang=` of the consent and request forms, when the site offers it (no error otherwise). */
+    private function requestedLanguage(Legal $legal): ?string
+    {
+        $l = Yii::$app->request->get('lang');
+        $tag = is_string($l) ? $legal->library()->normalizeLanguage($l) : null;
+        return $tag !== null && in_array($tag, $legal->offered(), true) ? $tag : null;
     }
 
     /** Language from the URL if the site offers it, else the site's default; also makes it the language of the whole request. */

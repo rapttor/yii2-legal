@@ -66,6 +66,11 @@ final class Consents
         if (!empty($f['uploads'])) {
             $out[] = ['key' => 'uploads', 'version' => '1', 'required' => true, 'kind' => 'confirm', 'url' => null, 'label' => $this->legal->t('consent.uploads', [], $lang)];
         }
+        $regions = trim((string)($cfg['policy']['excluded_regions'] ?? ''));
+        if ($regions !== '') { // we cannot see where a visitor really is (VPNs): the visitor confirms it. A changed list asks everyone again.
+            $out[] = ['key' => 'regions', 'version' => substr(md5(mb_strtolower($regions)), 0, 8), 'required' => true, 'kind' => 'confirm', 'url' => null,
+                'label' => $this->legal->t('consent.regions', ['{countries}' => $regions], $lang)];
+        }
         if (!empty($f['marketing'])) {
             $out[] = ['key' => 'marketing', 'version' => '1', 'required' => false, 'kind' => 'optional', 'url' => null, 'label' => $this->legal->t('consent.marketing', [], $lang)];
         }

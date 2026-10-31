@@ -11,6 +11,7 @@ use yii\helpers\Html;
 $this->title = $legal->t('accept.title');
 ?>
 <section class="legal legal-accept-page">
+    <?= rapttor\yii2legal\widgets\LanguageSwitcher::widget(['sameRoute' => true]) ?>
     <h1><?= Html::encode($this->title) ?></h1>
     <p><?= Html::encode($legal->t('accept.intro')) ?></p>
     <?php if ($error): ?><p class="legal-error" role="alert"><?= Html::encode($legal->t('accept.required')) ?></p><?php endif ?>

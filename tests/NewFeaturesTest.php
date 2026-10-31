@@ -46,14 +46,14 @@ final class NewFeaturesTest extends TestCase
         $legal = new Legal(array_replace([
             'config' => array_replace_recursive(self::BASE, $extra), 'cache' => null, 'archivePath' => '@runtime/legal-' . uniqid(),
             'acceptanceTable' => 'legal_acceptance', 'suppressionTable' => 'legal_suppression',
-            'tokenTable' => 'legal_token', 'withdrawalTable' => 'legal_withdrawal', 'secret' => 'test-secret',
+            'tokenTable' => 'legal_token', 'withdrawalTable' => 'legal_withdrawal', 'requestTable' => 'legal_request', 'secret' => 'test-secret',
             'mailSender' => function (string $to, string $subject, string $html, string $text, array $headers = []): void {
                 $this->mails[] = compact('to', 'subject', 'html', 'text', 'headers');
             },
         ], $props));
         Yii::$app->set('legal', $legal);
         Schema::create(Yii::$app->db, $legal);
-        foreach ($wipe ? ['legal_acceptance', 'rapttor_metadata', 'legal_suppression', 'legal_token', 'legal_withdrawal'] : [] as $t) {
+        foreach ($wipe ? ['legal_acceptance', 'rapttor_metadata', 'legal_suppression', 'legal_token', 'legal_withdrawal', 'legal_request'] : [] as $t) {
             Yii::$app->db->createCommand()->delete($t)->execute();
         }
         return $legal;
@@ -596,5 +596,65 @@ final class NewFeaturesTest extends TestCase
         $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 77, 'document' => 'terms'])->one();
         $this->assertStringContainsString('evidence', (string)$row['context']);
         $this->assertArrayHasKey('ua_hash', $row);
+    }
+
+    public function testPrivacyRequestIsStoredMailedAndRaisesAnEvent(): void
+    {
+        $legal = $this->legal(['company' => ['privacy_email' => 'privacy@example.test', 'legal_email' => 'legal@example.test']]);
+        $events = [];
+        $legal->on(Legal::EVENT_REQUEST, function ($e) use (&$events): void { $events[] = $e; });
+        $r = $legal->requests()->submit('delete', 'Person@Example.test', 'Please delete my account and data.', 'P');
+        $this->assertTrue($r['ok']);
+        $this->assertSame('REQ-000001', $r['ref']);
+        $this->assertSame('privacy@example.test', $this->mails[0]['to'], 'privacy requests go to the privacy mailbox');
+        $this->assertCount(1, $events);
+        $row = (new \yii\db\Query())->from('legal_request')->one();
+        $this->assertSame('open', $row['status']);
+        $this->assertEqualsWithDelta(time() + 30 * 86400, (int)$row['due_at'], 5, 'privacy rights get an internal due date');
+        $legal->requests()->submit('copyright', 'x@example.test', 'This is my picture, take it down.');
+        $this->assertSame('legal@example.test', $this->mails[1]['to']);
+        $this->assertNull((new \yii\db\Query())->from('legal_request')->where(['type' => 'copyright'])->one()['due_at'], 'no due date unless the law sets one');
+        $this->assertCount(2, $legal->requests()->open());
+        $this->assertSame([], $legal->requests()->overdue());
+        $this->assertTrue($legal->requests()->close(1, 'done', 'deleted'));
+        $this->assertFalse($legal->requests()->close(1), 'already closed');
+        $this->assertCount(1, $legal->requests()->open());
+    }
+
+    public function testRequestRejectsBadInputAndFloods(): void
+    {
+        $legal = $this->legal([], ['requestsPerHour' => 2]);
+        $this->assertSame('invalid', $legal->requests()->submit('access', 'not-an-email', 'hello there')['error']);
+        $this->assertSame('invalid', $legal->requests()->submit('access', 'a@example.test', 'hi')['error']);
+        $_SERVER['REMOTE_ADDR'] = '203.0.113.9';
+        $this->assertTrue($legal->requests()->submit('access', 'a@example.test', 'first request')['ok']);
+        $this->assertTrue($legal->requests()->submit('access', 'a@example.test', 'second request')['ok']);
+        $this->assertSame('limit', $legal->requests()->submit('access', 'a@example.test', 'third request')['error']);
+    }
+
+    public function testRequestFormAndLanguageSwitcherOnTheForms(): void
+    {
+        $legal = $this->legal(['company' => ['privacy_email' => 'privacy@example.test']], ['languages' => ['en', 'hr'], 'publishDrafts' => true]);
+        $out = (string)Yii::$app->runAction('legal/request');
+        $this->assertStringContainsString('name="message"', $out);
+        $this->assertStringContainsString('lang=hr', $out, 'switcher links to the same form in another language');
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        Yii::$app->request->setBodyParams(['type' => 'access', 'email' => 'a@example.test', 'message' => 'Show me my data please']);
+        $out = (string)Yii::$app->runAction('legal/request');
+        $this->assertStringContainsString('REQ-', $out);
+    }
+
+    public function testExcludedRegionsAreAConsentTheVisitorGives(): void
+    {
+        $legal = $this->legal(['policy' => ['excluded_regions' => 'Atlantis, Mu']]);
+        $defs = array_column($legal->consents()->definitions('en'), null, 'key');
+        $this->assertArrayHasKey('regions', $defs);
+        $this->assertTrue($defs['regions']['required']);
+        $this->assertStringContainsString('Atlantis, Mu', $defs['regions']['label']);
+        $v1 = $defs['regions']['version'];
+        $legal2 = $this->legal(['policy' => ['excluded_regions' => 'Atlantis, Mu, Lemuria']]);
+        $this->assertNotSame($v1, array_column($legal2->consents()->definitions('en'), null, 'key')['regions']['version'], 'a changed list is asked again');
+        $legal3 = $this->legal();
+        $this->assertArrayNotHasKey('regions', array_column($legal3->consents()->definitions('en'), null, 'key'));
     }
 }

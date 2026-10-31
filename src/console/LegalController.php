@@ -31,9 +31,12 @@ final class LegalController extends Controller
     /** `legal/agents`: also write or update llms.txt next to it. */
     public bool $llms = false;
 
+    public string $status = 'done';
+    public ?string $note = null;
+
     public function options($actionID): array
     {
-        return array_merge(parent::options($actionID), ['diff', 'skipClaims', 'file', 'llms']);
+        return array_merge(parent::options($actionID), ['diff', 'skipClaims', 'file', 'llms', 'status', 'note']);
     }
 
     public function actionCheck(): int
@@ -110,6 +113,33 @@ final class LegalController extends Controller
         }
         $this->stdout("\nA MAJOR or MINOR change means rights or clauses changed: tell your users as your Terms and Privacy Policy require, then run `yii legal/approve`.\n");
         return ExitCode::OK;
+    }
+
+    /** Open privacy and legal requests, soonest due first: `yii legal/requests`. */
+    public function actionRequests(): int
+    {
+        /** @var Legal $legal */
+        $legal = Yii::$app->get('legal');
+        $rows = $legal->requests()->open();
+        if ($rows === []) {
+            $this->stdout("No open requests.\n");
+            return ExitCode::OK;
+        }
+        foreach ($rows as $r) {
+            $due = $r['due_at'] === null ? 'no due date' : 'due ' . gmdate('Y-m-d', (int)$r['due_at']) . ((int)$r['due_at'] < time() ? '  OVERDUE' : '');
+            $this->stdout(sprintf("%s  %-9s %-30s %s\n    %s\n", \rapttor\yii2legal\Requests::ref((int)$r['id']), $r['type'], $r['email'], $due, mb_substr(str_replace("\n", ' ', (string)$r['message']), 0, 100)));
+        }
+        return ExitCode::OK;
+    }
+
+    /** Mark a request handled: `yii legal/request-close 12 --status=done --note="exported and sent"`. */
+    public function actionRequestClose(int $id): int
+    {
+        /** @var Legal $legal */
+        $legal = Yii::$app->get('legal');
+        $ok = $legal->requests()->close($id, $this->status, $this->note);
+        $this->stdout($ok ? "Closed.\n" : "No open request with that id.\n");
+        return $ok ? ExitCode::OK : ExitCode::DATAERR;
     }
 
     public function actionApprove(): int

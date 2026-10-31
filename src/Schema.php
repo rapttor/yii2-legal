@@ -26,6 +26,11 @@ final class Schema
             'id' => 'pk', 'contract' => 'string(190) NOT NULL', 'email' => 'string(254) NOT NULL', 'name' => 'string(190) NULL',
             'requested_at' => 'integer NOT NULL', 'ip_hash' => 'string(64) NULL', 'acknowledged_at' => 'integer NULL',
         ], [['email', 'contract']], false);
+        self::table($db, $legal->requestTable, [
+            'id' => 'pk', 'type' => 'string(16) NOT NULL', 'email' => 'string(254) NOT NULL', 'name' => 'string(190) NULL', 'message' => 'text NOT NULL',
+            'status' => 'string(12) NOT NULL', 'user_id' => 'integer NULL', 'lang' => 'string(12) NULL', 'ip_hash' => 'string(64) NULL', 'ua_hash' => 'string(64) NULL',
+            'created_at' => 'integer NOT NULL', 'due_at' => 'integer NULL', 'closed_at' => 'integer NULL', 'note' => 'text NULL',
+        ], [['status', 'due_at'], ['ip_hash', 'created_at']], false);
     }
 
     /** Add the `context` column to an acceptance table created by version 0.1.0. */

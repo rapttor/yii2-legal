@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.5.0 (requires rapttor/legal ^2.4)
+- **Privacy and legal requests**: public form `/legal/request` (access, export, correction, deletion, objection, copyright, abuse, other), table `legal_request`, `Legal::requests()` (`submit`, `open`, `overdue`, `close`), mail to the privacy or legal mailbox, `Legal::EVENT_REQUEST` (`RequestEvent`) so the app can alert its admins, honeypot and a per-connection limit, internal due dates (`requestDueDays`, one month for privacy rights) that are never shown to the requester. Console `yii legal/requests` and `yii legal/request-close`. `legal/check` hints when nothing handles the event. Run `php yii migrate`.
+- **Excluded regions**: `policy.excluded_regions` adds a required consent "I am not located in, and am not a resident or national of ..." (the version follows the list, so a change asks everyone again).
+- **Language switcher on the consent and terms-updated screens and on the request form** (`LanguageSwitcher` option `sameRoute`, `?lang=`).
+- `ConsentGate::$exceptCan`: roles or permissions (your own superadmins) that skip the gate; tenant admins are asked like everybody else.
+- Messages for the new screens in sr, hr, bs and cnr.
+
 ## 2.4.0
 - Requires `rapttor/yii2-metadata ^1.0`: `MetadataConsentStore` is now a thin wrapper over its `Metadata` component (uses the app's `metadata` component when registered, so `noHistory`, `historyMax`, `export()` and `deleteAll()` apply; otherwise a default one on `metadataTable`). The table is created by `Schema::create` via that package.
 - History entries now have the metadata package's shape: `entry`, `rev`, `replaced_at`, `value` (was `key` plus the old fields). `MetadataConsentStore::history($userId, $consent = null)`.
