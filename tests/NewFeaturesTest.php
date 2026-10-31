@@ -715,4 +715,13 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame('Confirm to continue.', $legal->signupIntro('en'));
         $this->assertSame('Confirm to continue.', $legal->signupIntro('de'), 'falls back to English');
     }
+
+    public function testRegionalEmbargoDoesNotListTheWholeCountry(): void
+    {
+        $legal = $this->legal(['policy' => ['activities' => 'sanctions']]);
+        $hint = array_column($legal->consents()->definitions('en'), null, 'key')['regions']['hint'];
+        $this->assertStringContainsString('Crimea (Ukraine)', $hint);
+        $this->assertStringNotContainsString(', Ukraine,', ', ' . $hint . ',', 'a regional embargo must not name the whole country');
+        $this->assertStringContainsString('Cuba', $hint);
+    }
 }

@@ -174,7 +174,7 @@ final class Consents
         $display = in_array($lang, ['sh', 'sr', 'hr', 'cnr'], true) ? 'bs' : $lang;
         $names = [];
         foreach ($map as $code => $english) {
-            $local = class_exists(\Locale::class) ? \Locale::getDisplayRegion('und-' . $code, $display) : '';
+            $local = !str_contains((string)$code, '-') && class_exists(\Locale::class) ? \Locale::getDisplayRegion('und-' . $code, $display) : ''; // regions (UA-43) keep their English name
             $names[] = $local !== '' && $local !== $code && !str_starts_with($local, 'Unknown') ? (string)$local : (string)$english;
         }
         foreach (explode(',', (string)($cfg['policy']['excluded_regions'] ?? '')) as $n) {

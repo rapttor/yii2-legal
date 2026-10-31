@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.1 (requires rapttor/legal ^2.6.1)
+- Regional embargoes (Crimea, Donetsk, Luhansk) are shown by their own names in the regions checkbox, not as the whole country.
+
 ## 2.8.0 (requires rapttor/legal ^2.6)
 - **One Balkan language `sh`** instead of sr, sr-Cyrl, hr, bs and cnr (old tags are aliases): messages, tests and docs follow. No national flag in the switcher for it.
 - **`policy.activities` tags** (and `feature.gambling`) put the countries that prohibit the activity into the required "I am not located in..." checkbox, with names in the visitor's language (intl extension), plus any names the owner typed. `yii legal/restrictions [tag]` prints the dataset; `legal/agents` writes the tag list with countries into AGENTS.md; `legal/check` hints when `policy.activities` is empty.
