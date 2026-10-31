@@ -134,6 +134,15 @@ class Legal extends Component
         $c = $this->effectiveConfig();
         $f = $c['feature'] ?? [];
         $h = [];
+        if (!empty($f['gambling'])) {
+            $h[] = 'feature.gambling is on: the tick box is not real age verification. Check licences for every country you serve and use verified age and identity checks where the law requires them.';
+        }
+        if (array_key_exists('age_gate', $f) && !$f['age_gate']) {
+            $h[] = 'feature.age_gate is switched off: the age and legal-age confirmation is on by default and is asked of every account; keep it off only with the owner\'s explicit approval.';
+        }
+        if (array_key_exists('uploads', $f) && !$f['uploads']) {
+            $h[] = 'feature.uploads is switched off: the upload and copyright responsibility confirmation is on by default; keep it off only if the app takes no user files or content.';
+        }
         if (!empty($f['anonymous']) && empty($f['age_gate'])) {
             $h[] = 'feature.anonymous is on but feature.age_gate is off: anonymous accounts need the age and legal-age confirmation (set feature.age_gate, policy.age_gate and policy.age_topics).';
         }
@@ -244,7 +253,8 @@ class Legal extends Component
             }
             $file = json_decode((string)file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         }
-        return $this->effective = array_replace_recursive($file, $this->config);
+        // Default-on consents (age and legal-age confirmation, upload responsibility) apply unless the site sets them to false.
+        return $this->effective = $this->library()->withDefaults(array_replace_recursive($file, $this->config));
     }
 
     /** The bundled legal release in force (store it next to your own publication records). */

@@ -90,7 +90,16 @@ For sites with `feature.analytics` or `feature.ads`: put `<?= rapttor\yii2legal\
 
 ## Consents checklist (after sign-in)
 
-Instead of one tick box, keep a **versioned list of consents with the account**: the documents in `acceptDocs`, the age confirmation (`feature.age_gate`), the upload and copyright responsibility (`feature.uploads`), product emails (`feature.marketing`), each third-party resource in `data.external`, plus your own in `consents`. Required items block use; optional ones are asked once per version and may be declined; a new version of an item asks again.
+Instead of one tick box, keep a **versioned list of consents with the account**.
+
+- **On by default for every app** (required): the documents in `acceptDocs` (Terms, Privacy), the **age and legal-age confirmation** (`policy.age_gate` 13, 16, 18 or 21; name the purpose in `policy.age_topics`) and the **upload and copyright responsibility**. They apply unless the owner sets `'feature' => ['age_gate' => false]` or `['uploads' => false]` explicitly; `legal/check` calls a switched-off default out.
+- **Opt-in, only if the app is about it**: gambling (`feature.gambling`, `policy.gambling_age`: its own age and lawfulness confirmation; a tick box is not real age verification), product emails (`feature.marketing`, optional), each third-party resource in `data.external` (optional), and your own app-specific requirements in `consents` (for example chat rules or distribution of content).
+
+Required items block use; optional ones are asked once per version and may be declined; a new version of an item asks again.
+
+```php
+'consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sr' => 'Poštovaću pravila četa.']]],
+```
 
 ```php
 'as legalConsents' => ['class' => rapttor\yii2legal\filters\ConsentGate::class],      // sends signed-in users (anonymous accounts too) to /legal/consents

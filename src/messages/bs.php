@@ -25,7 +25,7 @@ return [
     'cookie.link' => 'Postavke kolačića',
     'consent.accept_doc' => 'Pročitao sam i prihvatam {doc}.',
     'consent.age' => 'Imam najmanje {level} godina i punoljetan sam prema pravilima moje zemlje za korištenje: {topics}.',
-    'consent.age_default_topics' => 'sadržaj osjetljiv na uzrast',
+    'consent.age_default_topics' => 'ovu uslugu',
     'consent.uploads' => 'Posjedujem prava na ono što otpremam ili imam dozvolu za njegovu upotrebu, i prihvatam da mogu biti odgovoran za tvrdnje o tome.',
     'consent.marketing' => 'Želim primati vijesti o proizvodu e-poštom.',
     'consent.external' => 'Dozvoljavam učitavanje: {name} ({provider}, {country}). Moja IP adresa se šalje toj kompaniji.',
@@ -86,4 +86,6 @@ Ovo je posljednja e-poruka koju ćete od nas primiti. Ako niste tražili, zanema
     'checkout.provider' => 'Narudžbe obrađuje {provider}, kao prodavac (merchant of record).',
     'checkout.consent' => 'Pritiskom na „{button}” pristajete na navedene uslove i na dokumente: {docs}.',
     'checkout.checkbox' => 'Pregledao sam uslove navedene iznad i prihvatam dokumente: {docs}.',
+    'consent.gambling' => 'Imam najmanje {level} godina, kockanje je zakonito tamo gdje živim i koristim ga samo za sebe.',
+    'consent.age_generic' => 'Imam najmanje {level} godina i punoljetan sam prema pravilima moje zemlje za korištenje ove usluge.',
 ];

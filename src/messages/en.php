@@ -25,7 +25,7 @@ return [
     'cookie.link' => 'Cookie settings',
     'consent.accept_doc' => 'I have read and accept the {doc}.',
     'consent.age' => 'I am at least {level} years old and of legal age under the rules of my country to use {topics}.',
-    'consent.age_default_topics' => 'age-sensitive content',
+    'consent.age_default_topics' => 'this service',
     'consent.uploads' => 'I own the rights to what I upload or have permission to use it, and I accept that I can be held accountable for claims about it.',
     'consent.marketing' => 'Send me product news by email.',
     'consent.external' => 'Allow {name} ({provider}, {country}) to be loaded. Your IP address is sent to it.',
@@ -86,4 +86,6 @@ This is the last email you will receive from us. If you did not ask, ignore this
     'checkout.provider' => 'Orders are processed by {provider}, the merchant of record.',
     'checkout.consent' => 'By pressing "{button}" you agree to the terms above and to the {docs}.',
     'checkout.checkbox' => 'I have seen the terms above and accept the {docs}.',
+    'consent.gambling' => 'I am at least {level} years old, gambling is lawful where I live, and I use it only for myself.',
+    'consent.age_generic' => 'I am at least {level} years old and of legal age under the rules of my country to use this service.',
 ];

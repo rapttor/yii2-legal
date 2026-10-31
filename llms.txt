@@ -8,6 +8,7 @@ Integrating or changing this package: read AGENTS.md first. It lists what to ask
 - [README.md](README.md): install, configuration, languages, console commands, safety
 - [src/Legal.php](src/Legal.php): the application component (documents(), html(), markdown(), url(), offered(), languageList(), release(), missing())
 - [src/widgets/LegalLinks.php](src/widgets/LegalLinks.php) and [src/widgets/LanguageSwitcher.php](src/widgets/LanguageSwitcher.php): footer links and language switcher
+- Consents on by default for every app: documents, age and legal-age confirmation, upload responsibility; opt-in: gambling and custom `consents` items
 - [src/Consents.php](src/Consents.php), [src/External.php](src/External.php), [src/Email.php](src/Email.php), [src/Withdrawal.php](src/Withdrawal.php): consents checklist, third-party resources, stopping email, withdrawal function
 - [src/blocklist/](src/blocklist/): blocklist adapters (Postar needs the endpoint from its docs)
 - [src/controllers/LegalController.php](src/controllers/LegalController.php): pages, hreflang, fallback notice

@@ -6,6 +6,7 @@
 - `Legal::hints()` and `legal/check` hints: anonymous accounts without `age_gate`, missing `age_topics`, `data.external` vs `feature.external`, DMCA agent, missing consent column, AGENTS.md without the checklist block.
 - `PostarBlocklist` uses Postar's documented `/v1/unsubscribes` (add, status, remove, 409 handling); `Legal::$providerFooter` for providers that append their own unsubscribe link; a provider that refuses the confirmation email (422) no longer breaks the "block all" request.
 - Docs: consent data as JSON in the user profile, troubleshooting for missing consent screens.
+- **Age and legal-age confirmation and upload responsibility are on by default** (requires rapttor/legal ^2.1): the plugin applies the catalogue's defaults to its config, so no app has to remember to switch them on. New opt-in gambling consent (own age and lawfulness confirmation); app-specific requirements stay custom `consents` items; hints call out a default that was switched off.
 
 ## 2.0.0 (requires rapttor/legal ^2.0)
 - Consents registry: versioned required/optional consents kept with the account (table, or a JSON attribute of your user model), `ConsentGate` filter, `/legal/consents` page; age confirmation, upload responsibility, marketing and third-party resources included by feature flag.

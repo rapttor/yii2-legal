@@ -36,9 +36,13 @@ final class NewFeaturesTest extends TestCase
         'product' => ['name' => 'Acme App'],
     ];
 
-    private function legal(array $extra = [], array $props = [], bool $wipe = true): Legal
+    /** @param bool $baseline false (default in these tests) switches the default-on consents off so a test sees only what it enables; true keeps the real defaults */
+    private function legal(array $extra = [], array $props = [], bool $wipe = true, bool $baseline = false): Legal
     {
         $this->mails = [];
+        if (!$baseline) {
+            $extra = array_replace_recursive(['feature' => ['age_gate' => false, 'uploads' => false]], $extra);
+        }
         $legal = new Legal(array_replace([
             'config' => array_replace_recursive(self::BASE, $extra), 'cache' => null, 'archivePath' => '@runtime/legal-' . uniqid(),
             'acceptanceTable' => 'legal_acceptance', 'consentTable' => 'legal_consent', 'suppressionTable' => 'legal_suppression',
@@ -515,5 +519,56 @@ final class NewFeaturesTest extends TestCase
         $this->assertStringContainsString('DMCA', $hints(['feature' => ['uploads' => true]]));
         $this->assertStringContainsString('legal/agents', $hints([]), 'no AGENTS.md block in the test app');
         $this->assertStringContainsString("no such column", $hints([], ['consentStore' => ['class' => JsonAttributeConsentStore::class, 'modelClass' => TestUserRecord::class, 'attribute' => 'missing_col']]));
+    }
+
+    // ---- consents that are on by default --------------------------------------------------------------------
+
+    public function testAgeAndUploadConsentsAreAskedByDefault(): void
+    {
+        $legal = $this->legal([], [], true, true);
+        $defs = array_column($legal->consents()->definitions(), null, 'key');
+        $this->assertSame(['terms', 'privacy', 'age', 'uploads'], array_keys($defs));
+        $this->assertTrue($defs['age']['required']);
+        $this->assertTrue($defs['uploads']['required']);
+        $this->assertStringContainsString('at least 18 years old', $defs['age']['label']);
+        $this->assertStringContainsString('this service', $defs['age']['label'], 'generic wording when the app names no topics');
+        $this->assertCount(4, $legal->consents()->blocking(1), 'a new account must answer all four before using the app');
+    }
+
+    public function testOwnerCanSwitchTheDefaultsOffExplicitlyAndOnlyThen(): void
+    {
+        $legal = $this->legal(['feature' => ['age_gate' => false]], [], true, true);
+        $this->assertSame(['terms', 'privacy', 'uploads'], array_column($legal->consents()->definitions(), 'key'));
+        $hints = implode(' | ', $legal->hints());
+        $this->assertStringContainsString('feature.age_gate is switched off', $hints, 'switching it off is called out');
+    }
+
+    public function testAgeWordingNamesTheTopicsWhenGiven(): void
+    {
+        $legal = $this->legal(['policy' => ['age_topics' => 'chat and games', 'age_gate' => '16']], [], true, true);
+        $age = array_column($legal->consents()->definitions(), null, 'key')['age'];
+        $this->assertSame('16', $age['version'], 'changing the age asks everybody again');
+        $this->assertStringContainsString('at least 16 years old', $age['label']);
+        $this->assertStringContainsString('chat and games', $age['label']);
+    }
+
+    public function testGamblingIsOptInAndHasItsOwnAge(): void
+    {
+        $this->assertNotContains('gambling', array_column($this->legal([], [], true, true)->consents()->definitions(), 'key'));
+        $legal = $this->legal(['feature' => ['gambling' => true], 'policy' => ['gambling_age' => '21']], [], true, true);
+        $g = array_column($legal->consents()->definitions(), null, 'key')['gambling'];
+        $this->assertTrue($g['required']);
+        $this->assertSame('21', $g['version']);
+        $this->assertStringContainsString('at least 21 years old, gambling is lawful where I live', $g['label']);
+        $this->assertStringContainsString('not real age verification', implode(' ', $legal->hints()));
+    }
+
+    public function testAppSpecificRequirementsAreCustomItems(): void
+    {
+        $legal = $this->legal([], ['consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sr' => 'Poštovaću pravila četa.']]]]);
+        $defs = array_column($legal->consents()->definitions(), null, 'key');
+        $this->assertSame('I will follow the chat rules.', $defs['chat_rules']['label']);
+        $this->assertSame('Poštovaću pravila četa.', array_column($legal->consents()->definitions('sr'), null, 'key')['chat_rules']['label']);
+        $this->assertTrue($defs['chat_rules']['required']);
     }
 }

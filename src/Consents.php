@@ -11,8 +11,9 @@ use Yii;
 /**
  * The consents an account must give, remembered with the account and asked again when they change.
  *
- * Items are derived from the site's features: the documents in `acceptDocs` (required), the age confirmation
- * (`feature.age_gate`, required), the upload/copyright responsibility (`feature.uploads`, required), product emails
+ * Items are derived from the site's features. ON BY DEFAULT: the documents in `acceptDocs`, the age and legal-age confirmation
+ * (`feature.age_gate`) and the upload/copyright responsibility (`feature.uploads`), all required; set a flag to false to drop it.
+ * Opt-in: gambling (`feature.gambling`, own age and lawfulness confirmation), product emails
  * (`feature.marketing`, optional), every third-party resource in `data.external` (optional), plus `Legal::$consents`.
  * Each item has a version; a stored answer for another version counts as missing. Required items block use until given;
  * optional ones are asked once per version and may be declined.
@@ -51,8 +52,16 @@ final class Consents
             }
         }
         if (!empty($f['age_gate'])) {
-            $out[] = ['key' => 'age', 'version' => (string)($cfg['policy']['age_gate'] ?? '18'), 'required' => true, 'kind' => 'age', 'url' => null,
-                'label' => $this->legal->t('consent.age', ['{level}' => (string)($cfg['policy']['age_gate'] ?? '18'), '{topics}' => (string)(($cfg['policy']['age_topics'] ?? '') ?: $this->legal->t('consent.age_default_topics', [], $lang))], $lang)];
+            $level = (string)($cfg['policy']['age_gate'] ?? '18');
+            $topics = trim((string)($cfg['policy']['age_topics'] ?? ''));
+            $out[] = ['key' => 'age', 'version' => $level, 'required' => true, 'kind' => 'age', 'url' => null,
+                'label' => $topics !== ''
+                    ? $this->legal->t('consent.age', ['{level}' => $level, '{topics}' => $topics], $lang)
+                    : $this->legal->t('consent.age_generic', ['{level}' => $level], $lang)];
+        }
+        if (!empty($f['gambling'])) {
+            $lvl = (string)($cfg['policy']['gambling_age'] ?? '18');
+            $out[] = ['key' => 'gambling', 'version' => $lvl, 'required' => true, 'kind' => 'age', 'url' => null, 'label' => $this->legal->t('consent.gambling', ['{level}' => $lvl], $lang)];
         }
         if (!empty($f['uploads'])) {
             $out[] = ['key' => 'uploads', 'version' => '1', 'required' => true, 'kind' => 'confirm', 'url' => null, 'label' => $this->legal->t('consent.uploads', [], $lang)];
