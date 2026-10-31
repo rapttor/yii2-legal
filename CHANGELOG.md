@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.6
+- AGENTS.md examples use the Balkan tag `sh` instead of the removed `sr` variants.
+
 ## 2.8.5
 - Docs: README covers the languages and the language strip, the new-account sign-in with `ConsentChecklist`, short labels with hints, activity tags and country lists, privacy and legal requests, `exceptCan`, the new console commands and options; AGENTS.md and llms.txt updated.
 

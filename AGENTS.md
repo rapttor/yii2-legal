@@ -16,13 +16,13 @@ You are not a lawyer and neither is this package: **never claim the result makes
    'components' => ['legal' => [
        'class' => rapttor\yii2legal\Legal::class,
        'configFile' => '@app/config/legal.json',   // or 'config' => [...]
-       'languages' => null,                         // null = every available language; or ['en', 'sr', 'sr-Cyrl', 'hr']
+       'languages' => null,                         // null = every available language; or ['en', 'sh', 'de', 'fr'] ('sh' is the one Balkan language; sr, hr, bs, cnr and sr-Cyrl are aliases)
        'publishDrafts' => false,                    // keep false; see Rules
    ]],
    ```
-5. Link the pages from the app. Never hard-code `/legal/...`: use `Yii::$app->legal->url('terms')` (current language) or `->url('terms', 'sr')`.
+5. Link the pages from the app. Never hard-code `/legal/...`: use `Yii::$app->legal->url('terms')` (current language) or `->url('terms', 'sh')`.
    - Footer: `<?= rapttor\yii2legal\widgets\LegalLinks::widget() ?>` (all published documents; `['only' => ['terms','privacy']]` to choose).
-   - Language switcher: `<?= rapttor\yii2legal\widgets\LanguageSwitcher::widget() ?>` (default: all offered languages; `['only' => ['en','sr']]`, `['labels' => ['sr' => 'SR']]`, `['hideIfSingle' => false]`).
+   - Language switcher: `<?= rapttor\yii2legal\widgets\LanguageSwitcher::widget() ?>` (default: all offered languages; `['only' => ['en','sh']]`, `['labels' => ['sh' => 'BHMS']]`, `['hideIfSingle' => false]`).
    - Sign-up and checkout: a checkbox or notice linking Terms and Privacy Policy (use `->url()`); apps that sell to consumers also link `refunds`.
 5b. **Instructions for you:** run `php yii legal/agents --llms` once and after every change of features: it writes the app's security and compliance checklist into AGENTS.md. Read that block before every task; it is stricter than this summary.
 6. **Sign-up and logins:** add `AcceptanceCheckbox::widget()` to the sign-up form, call `Yii::$app->legal->acceptance()->record($user->id)` when the form validates (never record without the checkbox), run `php yii migrate`, and add the `AcceptanceFilter` (`'as legalAcceptance'`) so users re-accept after a MAJOR/MINOR change. `AcceptanceCheckbox` renders one unticked box per document; pass the same document list to `AcceptanceCheckbox::posted($docs)`, which is true only when every document has its own ticked box. Never replace it with one "I accept all" box, a pre-ticked box or a notice.
