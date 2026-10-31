@@ -10,7 +10,7 @@ use yii\helpers\Html;
 
 $this->title = $legal->t('consents.title');
 ?>
-<section class="legal legal-consents-page">
+<section class="legal legal-consents-page" lang="<?= Html::encode($legal->currentLanguage()) ?>" dir="<?= Html::encode($legal->library()->direction($legal->currentLanguage())) ?>">
     <?= rapttor\yii2legal\widgets\LanguageSwitcher::widget(['sameRoute' => true]) ?>
     <h1><?= Html::encode($this->title) ?></h1>
     <p><?= Html::encode($legal->t('consents.intro')) ?></p>

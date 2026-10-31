@@ -113,8 +113,6 @@ To jest ostatnia wiadomość, jaką otrzymają Państwo od nas. Jeśli wniosku n
     'consent.gambling_hint' => 'Hazard jest legalny w miejscu mojego zamieszkania, a korzystam z niego wyłącznie na własny użytek.',
     'consent.marketing_hint' => 'Drogą e-mailową. Zgodę można wycofać w dowolnym momencie.',
     'consent.external_hint' => 'Adres IP zostanie przesłany do {provider} ({country}) w chwili wczytania.',
-    'signup.title' => 'Witamy. Ostatni krok',
-    'signup.intro' => 'Aby utworzyć konto, potwierdź każdą poniższą pozycję. Każde pole wyboru jest osobne i żadne nie jest zaznaczone za użytkownika.',
     'signup.button' => 'Utwórz konto i zaloguj się',
     'signup.error' => 'Aby kontynuować, potwierdź każdą wymaganą pozycję.',
 ];

@@ -154,9 +154,9 @@ final class FeaturesTest extends TestCase
     {
         $legal = $this->legal();
         $this->assertSame('Cookie settings', $legal->t('cookie.link', [], 'en'));
-        $this->assertSame('Postavke kolačića', $legal->t('cookie.link', [], 'hr'));
-        $this->assertSame('Подешавања колачића', $legal->t('cookie.link', [], 'sr-Cyrl'));
-        $this->assertSame('Cookie settings', $legal->t('cookie.link', [], 'ja'), 'unknown language: English');
+        $this->assertSame('Postavke kolačića', $legal->t('cookie.link', [], 'sh'));
+        $this->assertSame('Postavke kolačića', $legal->t('cookie.link', [], 'hr'), 'Croatian tags use the Balkan texts');
+        $this->assertSame('Cookie settings', $legal->t('cookie.link', [], 'xx'), 'unknown language: English');
     }
 
     // ---- claims, approval, structured tables, TOC --------------------------------------------------------------

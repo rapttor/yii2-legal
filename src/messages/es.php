@@ -113,8 +113,6 @@ Este es el último correo que recibirá de nosotros. Si no lo ha solicitado, ign
     'consent.gambling_hint' => 'El juego es legal donde vivo, y lo utilizo solo para mí.',
     'consent.marketing_hint' => 'Por correo electrónico. Puede dejar de recibirlos en cualquier momento.',
     'consent.external_hint' => '{provider} ({country}) recibe su dirección IP al cargarse.',
-    'signup.title' => 'Bienvenido. Un último paso',
-    'signup.intro' => 'Para crear su cuenta, confirme cada elemento siguiente. Cada casilla es independiente y ninguna está marcada de antemano.',
     'signup.button' => 'Crear cuenta e iniciar sesión',
     'signup.error' => 'Confirme cada elemento obligatorio para continuar.',
 ];

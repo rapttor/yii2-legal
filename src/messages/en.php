@@ -113,8 +113,6 @@ This is the last email you will receive from us. If you did not ask, ignore this
     'consent.gambling_hint' => 'Gambling is lawful where I live, and I use it only for myself.',
     'consent.marketing_hint' => 'By email. You can stop at any time.',
     'consent.external_hint' => '{provider} ({country}) receives your IP address when it loads.',
-    'signup.title' => 'Welcome. One last step',
-    'signup.intro' => 'To create your account, confirm each item below. Every box is separate and none is ticked for you.',
     'signup.button' => 'Create account and sign in',
     'signup.error' => 'Please confirm each required item to continue.',
 ];

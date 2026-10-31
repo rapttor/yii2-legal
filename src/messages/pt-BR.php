@@ -113,8 +113,6 @@ Este é o último e-mail que você receberá de nós. Se não foi você quem ped
     'consent.gambling_hint' => 'Apostar é permitido onde moro, e eu o utilizo apenas para mim.',
     'consent.marketing_hint' => 'Por e-mail. Você pode parar a qualquer momento.',
     'consent.external_hint' => '{provider} ({country}) recebe seu endereço IP ao ser carregado.',
-    'signup.title' => 'Bem-vindo. Falta um último passo',
-    'signup.intro' => 'Para criar sua conta, confirme cada item abaixo. Cada caixa é separada e nenhuma vem marcada por você.',
     'signup.button' => 'Criar conta e entrar',
     'signup.error' => 'Confirme cada item obrigatório para continuar.',
 ];

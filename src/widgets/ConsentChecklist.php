@@ -34,6 +34,7 @@ final class ConsentChecklist extends Widget
             $hint = ($d['hint'] ?? '') !== '' ? Html::tag('small', Html::encode($d['hint']), ['class' => 'legal-consent-hint', 'style' => 'display:block;opacity:.7;margin:.15rem 0 0 1.6em']) : '';
             $out .= Html::tag('p', Html::tag('label', $label) . $link . $hint, ['class' => 'legal-consent-item' . (in_array($d['key'], $this->missing, true) ? ' legal-consent-missing' : '')]);
         }
-        return Html::tag('div', $out, ['class' => 'legal-consent-list']);
+        $lang = $legal->currentLanguage();
+        return Html::tag('div', $out, ['class' => 'legal-consent-list', 'lang' => $lang, 'dir' => $legal->library()->direction($lang)]);
     }
 }

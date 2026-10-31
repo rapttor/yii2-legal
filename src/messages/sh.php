@@ -113,8 +113,6 @@ Ovo je posljednja e-poruka koju ćete od nas primiti. Ako niste tražili, zanema
     'consent.gambling_hint' => 'Kockanje je zakonito tamo gdje živim, a koristim ga samo za sebe.',
     'consent.marketing_hint' => 'E-poštom. Možete se odjaviti u bilo kom trenutku.',
     'consent.external_hint' => '{provider} ({country}) prima vašu IP adresu prilikom učitavanja.',
-    'signup.title' => 'Dobrodošli. Još samo jedan korak',
-    'signup.intro' => 'Da biste kreirali nalog, potvrdite svaku stavku ispod. Svaka kućica je zasebna i nijedna nije unaprijed označena za vas.',
     'signup.button' => 'Kreirajte nalog i prijavite se',
     'signup.error' => 'Potvrdite svaku obaveznu stavku da biste nastavili.',
 ];

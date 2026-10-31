@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.8.0 (requires rapttor/legal ^2.6)
+- **One Balkan language `sh`** instead of sr, sr-Cyrl, hr, bs and cnr (old tags are aliases): messages, tests and docs follow. No national flag in the switcher for it.
+- **`policy.activities` tags** (and `feature.gambling`) put the countries that prohibit the activity into the required "I am not located in..." checkbox, with names in the visitor's language (intl extension), plus any names the owner typed. `yii legal/restrictions [tag]` prints the dataset; `legal/agents` writes the tag list with countries into AGENTS.md; `legal/check` hints when `policy.activities` is empty.
+- Sign-up step: the title is the app name (`Legal::appName()`), the intro appears only when `Legal::$signupIntro` is set; removed `signup.title` and `signup.intro` messages.
+
 ## 2.7.1
 - Document checkbox labels no longer inflect the document title (`Prihvaćam dokument: {doc}`, `Acepto: {doc}`): titles are nominative and gendered, so the old sentences were ungrammatical in several languages. Translators: never put a placeholder where the language would decline or gender it; use a colon form.
 

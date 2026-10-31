@@ -113,8 +113,6 @@ Dit is de laatste e-mail die u van ons ontvangt. Heeft u dit niet verzocht, nege
     'consent.gambling_hint' => 'Gokken is toegestaan waar ik woon, en ik gebruik het alleen voor mijzelf.',
     'consent.marketing_hint' => 'Per e-mail. U kunt dit op elk moment stopzetten.',
     'consent.external_hint' => '{provider} ({country}) ontvangt uw IP-adres zodra het wordt geladen.',
-    'signup.title' => 'Welkom. Nog één stap',
-    'signup.intro' => 'Om uw account aan te maken, bevestigt u onderstaande onderdelen een voor een. Elk vakje staat los van de andere en niets is voor u aangevinkt.',
     'signup.button' => 'Account aanmaken en inloggen',
     'signup.error' => 'Bevestig elk verplicht onderdeel om door te gaan.',
 ];

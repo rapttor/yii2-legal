@@ -150,6 +150,10 @@ class Legal extends Component
         $c = $this->effectiveConfig();
         $f = $c['feature'] ?? [];
         $h = [];
+        $pol = $c['policy'] ?? [];
+        if (trim((string)($pol['activities'] ?? '')) === '' && empty($f['gambling'])) {
+            $h[] = 'policy.activities is empty: ask the owner what the app does that some countries prohibit (gambling, alcohol, tobacco, cannabis, adult, dating, lgbtq, crypto, vpn, weapons, pharmacy; sanctions is recommended for every app). `php yii legal/restrictions` lists the tags.';
+        }
         if (!$this->hasEventHandlers(self::EVENT_REQUEST)) {
             $h[] = 'Privacy and legal requests (/legal/request) are emailed to the privacy/legal mailbox, but nothing in the app alerts your admins: attach a handler to Legal::EVENT_REQUEST (chat, ticket, backoffice badge) and show Yii::$app->legal->requests()->open() in the backoffice.';
         }
@@ -379,6 +383,24 @@ class Legal extends Component
     public function currentLanguage(): string
     {
         return $this->forced ?? $this->visitorLanguage() ?? $this->resolve($this->language ?? (string)Yii::$app->language);
+    }
+
+    /** Optional text under the title on the new-account sign-in step: a string, or ['en' => '...', 'sh' => '...']; null = none is shown. */
+    public string|array|null $signupIntro = null;
+
+    /** Name shown as the title of the sign-up step: product name, else company name, else the application name. */
+    public function appName(): string
+    {
+        $c = $this->effectiveConfig();
+        return (string)($c['product']['name'] ?? $c['company']['name'] ?? Yii::$app->name);
+    }
+
+    public function signupIntro(?string $lang = null): ?string
+    {
+        $lang ??= $this->currentLanguage();
+        $t = $this->signupIntro;
+        $t = is_array($t) ? ($t[$lang] ?? $t['en'] ?? reset($t)) : $t;
+        return is_string($t) && trim($t) !== '' ? $t : null;
     }
 
     /** Name of the query parameter and of the cookie that carry the visitor's language choice (`?lang=hr` on any page that shows legal screens). */

@@ -113,8 +113,6 @@ Dies ist die letzte E-Mail, die Sie von uns erhalten. Falls Sie das nicht beantr
     'consent.gambling_hint' => 'Glücksspiel ist an meinem Wohnort erlaubt, und ich nutze es nur für mich selbst.',
     'consent.marketing_hint' => 'Per E-Mail. Sie können sich jederzeit abmelden.',
     'consent.external_hint' => '{provider} ({country}) erhält beim Laden Ihre IP-Adresse.',
-    'signup.title' => 'Willkommen. Ein letzter Schritt',
-    'signup.intro' => 'Um Ihr Konto zu erstellen, bestätigen Sie jeden der folgenden Punkte. Jedes Kästchen ist separat, und keines ist für Sie angekreuzt.',
     'signup.button' => 'Konto erstellen und anmelden',
     'signup.error' => 'Bitte bestätigen Sie jeden Pflichtpunkt, um fortzufahren.',
 ];

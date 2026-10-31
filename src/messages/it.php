@@ -113,8 +113,6 @@ Questa sarà l\'ultima e-mail che riceverà da noi. Se non ha fatto richiesta, i
     'consent.gambling_hint' => 'Il gioco è lecito nel luogo in cui vivo e lo utilizzo solo personalmente.',
     'consent.marketing_hint' => 'Via e-mail. È possibile interrompere la ricezione in qualsiasi momento.',
     'consent.external_hint' => 'Al caricamento, {provider} ({country}) riceve l\'indirizzo IP.',
-    'signup.title' => 'Benvenuto. Resta un ultimo passaggio',
-    'signup.intro' => 'Per creare l\'account, occorre confermare ciascuna voce qui sotto. Ogni casella è separata e nessuna è preselezionata.',
     'signup.button' => 'Crea account e accedi',
     'signup.error' => 'Per continuare, occorre confermare ciascuna voce obbligatoria.',
 ];

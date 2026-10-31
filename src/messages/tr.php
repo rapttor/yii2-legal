@@ -113,8 +113,6 @@ Bu, sizden alacağınız son e-posta olacak. Talep etmediyseniz bu e-postayı yo
     'consent.gambling_hint' => 'Kumar oynamak yaşadığım yerde yasaldır ve kumarı yalnızca kendim için kullanıyorum.',
     'consent.marketing_hint' => 'E-posta yoluyla. İstediğiniz zaman durdurabilirsiniz.',
     'consent.external_hint' => '{provider} ({country}), yüklendiğinde IP adresinizi alır.',
-    'signup.title' => 'Hoş geldiniz. Son bir adım kaldı',
-    'signup.intro' => 'Hesabınızı oluşturmak için aşağıdaki her maddeyi onaylayın. Her kutu ayrıdır ve hiçbiri sizin yerinize işaretlenmemiştir.',
     'signup.button' => 'Hesap oluştur ve oturum aç',
     'signup.error' => 'Devam etmek için lütfen zorunlu her maddeyi onaylayın.',
 ];

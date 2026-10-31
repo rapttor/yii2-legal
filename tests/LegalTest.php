@@ -136,81 +136,72 @@ final class LegalTest extends TestCase
     {
         $legal = $this->legal();
         $this->assertContains('en', $legal->offered());
-        $this->assertNotContains('sr', $legal->offered(), 'draft translations are hidden by default');
+        $this->assertNotContains('sh', $legal->offered(), 'draft translations are hidden by default');
 
         $legal = $this->legal([], ['publishDrafts' => true]);
-        $this->assertContains('sr', $legal->offered());
-        $this->assertContains('sr-Cyrl', $legal->offered());
+        $this->assertContains('sh', $legal->offered());
     }
 
     public function testLanguagesOptionNarrowsAndOrdersTheSwitcher(): void
     {
-        $legal = $this->legal([], ['publishDrafts' => true, 'languages' => ['sr', 'en', 'xx', 'ja']]);
-        $this->assertSame(['sr', 'en'], $legal->offered(), 'unknown or unavailable tags are ignored, order is kept');
-        $this->assertSame('sr', $legal->resolve('sr_RS'));
-        $this->assertSame('en', $legal->resolve('hr'), 'a language the site does not offer falls back');
+        $legal = $this->legal([], ['publishDrafts' => true, 'languages' => ['sh', 'en', 'xx', 'zz']]);
+        $this->assertSame(['sh', 'en'], $legal->offered(), 'unknown or unavailable tags are ignored, order is kept');
+        $this->assertSame('sh', $legal->resolve('sr_RS'));
+        $this->assertSame('sh', $legal->resolve('hr'), 'Croatian, Bosnian, Montenegrin and Serbian tags are the one Balkan language');
+        $this->assertSame('en', $legal->resolve('de'), 'a language the site does not offer falls back');
     }
 
     public function testDocumentsFallBackToEnglishPerDocument(): void
     {
         $legal = $this->legal([], ['publishDrafts' => true]);
-        $d = $legal->document('cookies', 'sr');
-        $this->assertSame('sr', $d['lang']);
+        $d = $legal->document('cookies', 'sh');
+        $this->assertSame('sh', $d['lang']);
         $this->assertFalse($d['fallback']);
-        $this->assertStringContainsString('kolačić', mb_strtolower($legal->html('cookies', 'sr')));
-        $this->assertSame('en', $legal->document('cookies', 'ru')['lang'], 'untranslated language shows the English document');
-        $this->assertTrue($legal->document('cookies', 'ru')['fallback']);
-    }
-
-    public function testCyrillicIsGeneratedFromSerbianLatin(): void
-    {
-        $legal = $this->legal([], ['publishDrafts' => true]);
-        $html = $legal->html('cookies', 'sr-Cyrl');
-        $this->assertMatchesRegularExpression('/[\x{0400}-\x{04FF}]{4,}/u', $html);
-        $this->assertStringContainsString('id="categories"', $html, 'anchors stay Latin');
-        $this->assertStringContainsString('href="/legal/sr-Cyrl/', $html, 'links keep the language');
+        $this->assertStringContainsString('kolačić', mb_strtolower($legal->html('cookies', 'sh')));
+        $strict = $this->legal([], ['publishDrafts' => false]);
+        $this->assertSame('en', $strict->document('cookies', 'ru')['lang'], 'a language without published texts shows the English document');
+        $this->assertTrue($strict->document('cookies', 'ru')['fallback']);
     }
 
     public function testLanguageAwareUrlsAndRoutes(): void
     {
         $legal = $this->legal([], ['publishDrafts' => true]);
         $this->assertSame('/legal/terms', $legal->url('terms', 'en'));
-        $this->assertSame('/legal/sr/terms', $legal->url('terms', 'sr'));
+        $this->assertSame('/legal/sh/terms', $legal->url('terms', 'sh'));
         (new Bootstrap())->bootstrap(Yii::$app);
-        $this->assertSame(['legal/view', ['lang' => 'sr', 'doc' => 'cookies']], Yii::$app->urlManager->parseRequest($this->request('legal/sr/cookies')));
-        $this->assertSame(['legal/index', ['lang' => 'sr']], Yii::$app->urlManager->parseRequest($this->request('legal/sr')));
+        $this->assertSame(['legal/view', ['lang' => 'sh', 'doc' => 'cookies']], Yii::$app->urlManager->parseRequest($this->request('legal/sh/cookies')));
+        $this->assertSame(['legal/index', ['lang' => 'sh']], Yii::$app->urlManager->parseRequest($this->request('legal/sh')));
         $this->assertSame(['legal/view', ['doc' => 'privacy']], Yii::$app->urlManager->parseRequest($this->request('legal/privacy')));
     }
 
     public function testControllerServesLanguageAndRejectsUnofferedOnes(): void
     {
-        $legal = $this->legal([], ['publishDrafts' => true, 'languages' => ['en', 'sr']]);
+        $legal = $this->legal([], ['publishDrafts' => true, 'languages' => ['en', 'sh']]);
         (new Bootstrap())->bootstrap(Yii::$app);
-        $out = (string)Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'sr']);
-        $this->assertStringContainsString('lang="sr"', $out);
+        $out = (string)Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'sh']);
+        $this->assertStringContainsString('lang="sh"', $out);
         $this->assertStringContainsString('Politika kolačića', $out);
-        $this->assertSame('sr', Yii::$app->response->headers->get('Content-Language'));
+        $this->assertSame('sh', Yii::$app->response->headers->get('Content-Language'));
         $this->assertArrayHasKey('hreflang-x-default', Yii::$app->view->linkTags);
 
         $out = (string)Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'en']);
         $this->assertStringContainsString('Cookie Policy', $out);
 
         $this->expectException(NotFoundHttpException::class);
-        Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'hr']);
+        Yii::$app->runAction('legal/view', ['doc' => 'cookies', 'lang' => 'de']);
     }
 
     public function testLanguageSwitcherListsOfferedAndHonoursOnly(): void
     {
-        $this->legal([], ['publishDrafts' => true, 'languages' => ['en', 'sr', 'sr-Cyrl']]);
+        $this->legal([], ['publishDrafts' => true, 'languages' => ['en', 'sh']]);
         $all = \rapttor\yii2legal\widgets\LanguageSwitcher::widget(['doc' => 'cookies']);
-        $this->assertStringContainsString('Srpski (latinica)', $all);
-        $this->assertStringContainsString('Српски (ћирилица)', $all);
-        $this->assertStringContainsString('href="/legal/sr/cookies"', $all);
+        $this->assertStringContainsString('Balkan', $all);
+        $this->assertStringContainsString('href="/legal/sh/cookies"', $all);
         $this->assertStringContainsString('aria-current', $all);
 
-        $only = \rapttor\yii2legal\widgets\LanguageSwitcher::widget(['doc' => 'cookies', 'only' => ['sr', 'en']]);
-        $this->assertStringNotContainsString('Српски', $only);
-        $this->assertLessThan(strpos($only, 'English'), strpos($only, 'Srpski'), 'order follows "only"');
+        $only = \rapttor\yii2legal\widgets\LanguageSwitcher::widget(['doc' => 'cookies', 'only' => ['sh', 'en']]);
+        $this->assertStringNotContainsString('Deutsch', $only);
+        $this->assertLessThan(strpos($only, 'English'), strpos($only, 'Balkan'), 'order follows "only"');
 
         $this->legal([], ['languages' => ['en']]);
         $this->assertSame('', \rapttor\yii2legal\widgets\LanguageSwitcher::widget(), 'a single language shows no switcher');

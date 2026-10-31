@@ -566,10 +566,10 @@ final class NewFeaturesTest extends TestCase
 
     public function testAppSpecificRequirementsAreCustomItems(): void
     {
-        $legal = $this->legal([], ['consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sr' => 'Poštovaću pravila četa.']]]]);
+        $legal = $this->legal([], ['consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sh' => 'Poštovaću pravila četa.']]]]);
         $defs = array_column($legal->consents()->definitions(), null, 'key');
         $this->assertSame('I will follow the chat rules.', $defs['chat_rules']['label']);
-        $this->assertSame('Poštovaću pravila četa.', array_column($legal->consents()->definitions('sr'), null, 'key')['chat_rules']['label']);
+        $this->assertSame('Poštovaću pravila četa.', array_column($legal->consents()->definitions('sh'), null, 'key')['chat_rules']['label']);
         $this->assertTrue($defs['chat_rules']['required']);
     }
 
@@ -636,10 +636,10 @@ final class NewFeaturesTest extends TestCase
 
     public function testRequestFormAndLanguageSwitcherOnTheForms(): void
     {
-        $legal = $this->legal(['company' => ['privacy_email' => 'privacy@example.test']], ['languages' => ['en', 'hr'], 'publishDrafts' => true]);
+        $legal = $this->legal(['company' => ['privacy_email' => 'privacy@example.test']], ['languages' => ['en', 'sh'], 'publishDrafts' => true]);
         $out = (string)Yii::$app->runAction('legal/request');
         $this->assertStringContainsString('name="message"', $out);
-        $this->assertStringContainsString('lang=hr', $out, 'switcher links to the same form in another language');
+        $this->assertStringContainsString('lang=sh', $out, 'switcher links to the same form in another language');
         $_SERVER['REQUEST_METHOD'] = 'POST';
         Yii::$app->request->setBodyParams(['type' => 'access', 'email' => 'a@example.test', 'message' => 'Show me my data please']);
         $out = (string)Yii::$app->runAction('legal/request');
@@ -670,12 +670,12 @@ final class NewFeaturesTest extends TestCase
 
     public function testVisitorLanguageFromQueryAndCookie(): void
     {
-        $legal = $this->legal([], ['languages' => ['en', 'hr'], 'publishDrafts' => true]);
-        $_GET['lang'] = 'hr';
-        Yii::$app->request->setQueryParams(['lang' => 'hr']);
+        $legal = $this->legal([], ['languages' => ['en', 'sh'], 'publishDrafts' => true]);
+        $_GET['lang'] = 'sh';
+        Yii::$app->request->setQueryParams(['lang' => 'sh']);
         $p = new \ReflectionProperty(Legal::class, 'visitorRead'); $p->setValue($legal, false);
-        $this->assertSame('hr', $legal->currentLanguage());
-        $this->assertSame('hr', Yii::$app->response->cookies->get('legal_lang')->value, 'the choice is remembered');
+        $this->assertSame('sh', $legal->currentLanguage());
+        $this->assertSame('sh', Yii::$app->response->cookies->get('legal_lang')->value, 'the choice is remembered');
         Yii::$app->request->setQueryParams([]);
         unset($_GET['lang']);
     }
@@ -690,5 +690,29 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame(['terms', 'privacy', 'age', 'uploads'], $legal->consents()->missingRequired([]));
         $this->assertSame(['privacy', 'age', 'uploads'], $legal->consents()->missingRequired(['terms' => '1']));
         $this->assertSame([], $legal->consents()->missingRequired(['terms' => '1', 'privacy' => '1', 'age' => '1', 'uploads' => '1']));
+    }
+
+    public function testActivitiesFeedTheRegionsConsentInTheVisitorsLanguage(): void
+    {
+        $legal = $this->legal(['policy' => ['activities' => 'alcohol', 'excluded_regions' => 'Atlantis']], ['languages' => ['en', 'de'], 'publishDrafts' => true]);
+        $defs = array_column($legal->consents()->definitions('en'), null, 'key');
+        $this->assertStringContainsString('Saudi Arabia', $defs['regions']['hint']);
+        $this->assertStringContainsString('Atlantis', $defs['regions']['hint'], 'the owner\'s own wording stays');
+        $de = array_column($legal->consents()->definitions('de'), null, 'key')['regions']['hint'];
+        $this->assertStringContainsString('Saudi-Arabien', $de, 'country names come in the visitor\'s language');
+        $this->assertStringContainsString('Atlantis', $de);
+        $g = $this->legal(['feature' => ['gambling' => true]]);
+        $this->assertStringContainsString('Saudi Arabia', array_column($g->consents()->definitions('en'), null, 'key')['regions']['hint'], 'feature.gambling adds the gambling countries');
+    }
+
+    public function testSignupTitleIsTheAppNameAndIntroOnlyWhenSet(): void
+    {
+        $legal = $this->legal();
+        $this->assertSame('Acme App', $legal->appName(), 'the product name');
+        $this->assertNull($legal->signupIntro());
+        $legal = $this->legal(['product' => ['name' => 'Acme Draw']], ['signupIntro' => ['en' => 'Confirm to continue.', 'sh' => 'Potvrdite za nastavak.']]);
+        $this->assertSame('Acme Draw', $legal->appName());
+        $this->assertSame('Confirm to continue.', $legal->signupIntro('en'));
+        $this->assertSame('Confirm to continue.', $legal->signupIntro('de'), 'falls back to English');
     }
 }

@@ -70,7 +70,7 @@ final class Consents
         $regions = trim((string)($cfg['policy']['excluded_regions'] ?? ''));
         if ($regions !== '') { // we cannot see where a visitor really is (VPNs): the visitor confirms it. A changed list asks everyone again.
             $out[] = ['key' => 'regions', 'version' => substr(md5(mb_strtolower($regions)), 0, 8), 'required' => true, 'kind' => 'confirm', 'url' => null,
-                'label' => $this->legal->t('consent.regions', [], $lang), 'hint' => $this->legal->t('consent.regions_hint', ['{countries}' => $regions], $lang)];
+                'label' => $this->legal->t('consent.regions', [], $lang), 'hint' => $this->legal->t('consent.regions_hint', ['{countries}' => $this->regionNames($cfg, $lang)], $lang)];
         }
         if (!empty($f['marketing'])) {
             $out[] = ['key' => 'marketing', 'version' => '1', 'required' => false, 'kind' => 'optional', 'url' => null,
@@ -165,6 +165,25 @@ final class Consents
             $this->legal->consent()->merge($cookie); // the browser follows the account's choice for third-party resources
         }
         return ['ok' => true, 'missing' => []];
+    }
+
+    /** The excluded countries in the visitor's language (ICU names when the intl extension is there), then any names the owner typed by hand. */
+    private function regionNames(array $cfg, string $lang): string
+    {
+        $map = (array)($cfg['policy']['excluded_map'] ?? []);
+        $display = in_array($lang, ['sh', 'sr', 'hr', 'cnr'], true) ? 'bs' : $lang;
+        $names = [];
+        foreach ($map as $code => $english) {
+            $local = class_exists(\Locale::class) ? \Locale::getDisplayRegion('und-' . $code, $display) : '';
+            $names[] = $local !== '' && $local !== $code && !str_starts_with($local, 'Unknown') ? (string)$local : (string)$english;
+        }
+        foreach (explode(',', (string)($cfg['policy']['excluded_regions'] ?? '')) as $n) {
+            $n = trim($n);
+            if ($n !== '' && !in_array($n, $map, true)) {
+                $names[] = $n; // the owner's own wording
+            }
+        }
+        return implode(', ', array_unique($names));
     }
 
     /** The rendered Markdown of the document version being accepted (its SHA-256 goes into the evidence). */

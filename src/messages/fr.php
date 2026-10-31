@@ -113,8 +113,6 @@ Ceci est le dernier e-mail que vous recevrez de notre part. Si vous n\'avez rien
     'consent.gambling_hint' => 'Les jeux d\'argent sont licites là où je vis, et je ne les utilise que pour moi-même.',
     'consent.marketing_hint' => 'Par e-mail. Vous pouvez arrêter à tout moment.',
     'consent.external_hint' => '{provider} ({country}) reçoit votre adresse IP lors du chargement.',
-    'signup.title' => 'Bienvenue. Une dernière étape',
-    'signup.intro' => 'Pour créer votre compte, confirmez chaque élément ci-dessous. Chaque case est distincte et aucune n\'est cochée à votre place.',
     'signup.button' => 'Créer le compte et se connecter',
     'signup.error' => 'Veuillez confirmer chaque élément obligatoire pour continuer.',
 ];

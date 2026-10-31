@@ -156,7 +156,7 @@ final class LegalController extends Controller
         /** @var Legal $legal */
         $legal = Yii::$app->get('legal');
         $missing = [];
-        $text = $legal->library()->internal($legal->effectiveConfig(), 'app_checklist', $missing);
+        $text = $legal->library()->internal($legal->effectiveConfig(), 'app_checklist', $missing) . "\n\n" . $this->restrictionsText($legal);
         $file = Yii::getAlias($this->file ?? '@app/AGENTS.md');
         $this->writeBlock($file, "# Instructions for AI coding agents\n\n", $text);
         $this->stdout("wrote the checklist into $file\n");
@@ -165,6 +165,48 @@ final class LegalController extends Controller
             $name = $legal->productName();
             $this->writeBlock($llms, "# $name\n\n", "> Application using rapttor/yii2-legal. AI coding agents: read " . basename($file) . " before changing anything.\n\n- [" . basename($file) . "](" . basename($file) . "): security and compliance checklist for this app (row-level access, secrets, uploads, consents, third-party resources, email, payments)\n- Legal pages: published from the legal config; `php yii legal/check` must pass\n");
             $this->stdout("wrote $llms\n");
+        }
+        return ExitCode::OK;
+    }
+
+    /** Activity tags and the countries that prohibit them, as Markdown for the agent files. */
+    private function restrictionsText(Legal $legal): string
+    {
+        $lib = $legal->library();
+        $out = "## Activities that some countries prohibit (tags for `policy.activities`)\n\n"
+            . "If the app does any of these things, add the tag to `policy.activities` in the legal config (comma separated, for example `gambling,alcohol,sanctions`; `feature.gambling` adds `gambling` by itself). "
+            . "Visitors then tick one box, \"I am not located in, and am not a resident or national of: ...\", listing the countries below (status `prohibited`) in their own language. Do not claim to block those countries (VPNs): the checkbox is the record. "
+            . "Most apps should add `sanctions`. The lists are a research starting point with a confidence level per country: counsel confirms them, and an owner can add countries by hand in `policy.excluded_regions`. Statuses `licensed` and `restricted` are not asked by default (`policy.restriction_status`).\n\n";
+        foreach ($lib->restrictionTags() as $tag) {
+            $d = $lib->restrictions($tag);
+            $names = array_values($lib->restrictedCountries([$tag]));
+            $conf = array_count_values(array_column(array_filter($d['countries'], static fn(array $c): bool => $c['status'] === 'prohibited'), 'confidence'));
+            $out .= "- `$tag`: {$d['title']}. Prohibited (" . count($names) . ', confidence high ' . ($conf['high'] ?? 0) . ', medium ' . ($conf['medium'] ?? 0) . ', low ' . ($conf['low'] ?? 0) . '): ' . ($names === [] ? 'none listed' : implode(', ', $names)) . ". Checked {$d['checked']}.\n";
+        }
+        return $out;
+    }
+
+    /** List the restrictions dataset: `yii legal/restrictions` (tags) or `yii legal/restrictions gambling` (countries with status, scope, confidence, source). */
+    public function actionRestrictions(?string $tag = null): int
+    {
+        /** @var Legal $legal */
+        $legal = Yii::$app->get('legal');
+        $lib = $legal->library();
+        if ($tag === null) {
+            foreach ($lib->restrictionTags() as $t) {
+                $d = $lib->restrictions($t);
+                $this->stdout(sprintf("%-10s %3d countries  %s (checked %s)\n", $t, count($d['countries']), $d['title'], $d['checked']));
+            }
+            return ExitCode::OK;
+        }
+        $d = $lib->restrictions($tag);
+        if ($d === null) {
+            $this->stderr("Unknown tag. Known: " . implode(', ', $lib->restrictionTags()) . "\n");
+            return ExitCode::DATAERR;
+        }
+        $this->stdout($d['title'] . "\n" . $d['summary'] . "\n\n");
+        foreach ($d['countries'] as $c) {
+            $this->stdout(sprintf("%s %-26s %-10s %-8s %-6s %s\n", $c['code'], $c['name'], $c['status'], $c['scope'], $c['confidence'], $c['source'] ?? ''));
         }
         return ExitCode::OK;
     }
