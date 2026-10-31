@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (requires rapttor/legal ^0.2)
+## 2.0.0 (requires rapttor/legal ^2.0)
 - Consents registry: versioned required/optional consents kept with the account (table, or a JSON attribute of your user model), `ConsentGate` filter, `/legal/consents` page; age confirmation, upload responsibility, marketing and third-party resources included by feature flag.
 - Third-party resources: `External::allows()`, per-item consent in the banner and cookie settings with the IP-address note, account choices sync the browser cookie.
 - Email: one-click stop for optional mail (RFC 8058 headers, signed links), confirmed "block all email" with a single-use link, suppression table, footer helper, `PostarBlocklist` and `BlocklistInterface` adapters, `mailSender`.

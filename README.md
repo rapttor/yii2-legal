@@ -47,7 +47,7 @@ echo LegalLinks::widget(['only' => ['terms', 'privacy']]);  // chosen ones, in t
 Yii::$app->legal->url('acceptable_use');   // '/legal/acceptable-use'
 Yii::$app->legal->documents();             // what this site publishes
 Yii::$app->legal->html('privacy');         // sanitised HTML (cached)
-Yii::$app->legal->release();               // installed rapttor/legal version, e.g. 0.1.0
+Yii::$app->legal->release();               // installed rapttor/legal version, e.g. 2.0.0
 ```
 
 Link to the Terms and Privacy Policy at sign-up and checkout. Documents that your features do not need are not published, and `url('dpa')` and similar for them are not valid.
