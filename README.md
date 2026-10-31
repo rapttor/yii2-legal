@@ -101,6 +101,23 @@ Yii::$app->legal->consents()->granted($user->id, 'uploads');                    
 
 Run `php yii migrate` once: the package registers its migrations (acceptance log, consents, email suppression, withdrawals).
 
+### Consent data in the user profile (JSON)
+
+To keep every answer with the user record instead of a separate table, add a column and point the store at it:
+
+```php
+// migration
+$this->addColumn('{{%user}}', 'consents', $this->text()->null());          // or $this->json()->null() where supported
+
+// legal component
+'consentStore' => ['class' => rapttor\yii2legal\stores\JsonAttributeConsentStore::class, 'modelClass' => app\models\User::class, 'attribute' => 'consents'],
+```
+The column then holds, per consent key, the version, whether it was granted, when, in which language and where: `{"terms":{"v":"1.1","granted":true,"at":1761900000,"lang":"en","source":"consents"},"age":{"v":"18","granted":true,...}}`. Documents accepted here are also written to the acceptance log (evidence with time, version and a hashed IP). `Yii::$app->legal->consents()->state($user->id)` returns the array for exports.
+
+### The "we updated our terms" popup
+
+`AcceptanceFilter` (first release) only showed the documents. It is deprecated and now behaves exactly like `ConsentGate`, so one screen carries everything: documents, the age and legal-age confirmation (`feature.age_gate`, `policy.age_gate` = 13, 16, 18 or 21, `policy.age_topics`), upload responsibility and optional choices. If the age confirmation does not appear, `php yii legal/check` tells you why (feature flag off, gate not attached, route excluded, old package version).
+
 ## Third-party resources and fonts
 
 Self-host fonts, scripts and icons. What must come from another server is declared in the config and loaded only with consent:
@@ -123,7 +140,8 @@ Optional mail stops with one click, at once. "Stop all email" asks for the addre
 
 ```php
 'mailSender' => fn($to, $subject, $html, $text, $headers) => Yii::$app->postar->send([...]),   // default: the Yii mailer component
-'blocklist' => ['class' => rapttor\yii2legal\blocklist\PostarBlocklist::class, 'endpoint' => '/v1/...'],   // endpoint from Postar's docs (not public yet)
+'blocklist' => ['class' => rapttor\yii2legal\blocklist\PostarBlocklist::class],   // POST /v1/unsubscribes; key from POSTAR_API_KEY
+'providerFooter' => true,   // Postar appends its own unsubscribe link to every email: do not add a second one   // documented endpoint /v1/unsubscribes, key from POSTAR_API_KEY
 ```
 
 ## Pay button, withdrawal, instructions for AI agents

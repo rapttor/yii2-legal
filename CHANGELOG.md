@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.0
+- `AcceptanceFilter` (the "we updated our terms" page) is deprecated and now behaves like `ConsentGate`: apps wired with it get the whole checklist, including the age and legal-age confirmation, after updating.
+- Documents accepted in the checklist are also written to the acceptance log.
+- `Legal::hints()` and `legal/check` hints: anonymous accounts without `age_gate`, missing `age_topics`, `data.external` vs `feature.external`, DMCA agent, missing consent column, AGENTS.md without the checklist block.
+- `PostarBlocklist` uses Postar's documented `/v1/unsubscribes` (add, status, remove, 409 handling); `Legal::$providerFooter` for providers that append their own unsubscribe link; a provider that refuses the confirmation email (422) no longer breaks the "block all" request.
+- Docs: consent data as JSON in the user profile, troubleshooting for missing consent screens.
+
 ## 2.0.0 (requires rapttor/legal ^2.0)
 - Consents registry: versioned required/optional consents kept with the account (table, or a JSON attribute of your user model), `ConsentGate` filter, `/legal/consents` page; age confirmation, upload responsibility, marketing and third-party resources included by feature flag.
 - Third-party resources: `External::allows()`, per-item consent in the banner and cookie settings with the IP-address note, account choices sync the browser cookie.

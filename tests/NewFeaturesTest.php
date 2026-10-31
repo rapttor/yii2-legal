@@ -329,31 +329,65 @@ final class NewFeaturesTest extends TestCase
         $this->assertTrue($legal->email()->isSuppressed('p@q.test', 'transactional'));
     }
 
-    public function testPostarBlocklistRefusesToGuessTheEndpoint(): void
+    public function testPostarBlocklistNeedsAKey(): void
     {
+        putenv('POSTAR_API_KEY');
         $this->expectException(\LogicException::class);
-        (new PostarBlocklist(['apiKey' => 'pk_x']))->add('a@b.test');
+        (new PostarBlocklist())->add('a@b.test');
     }
 
-    public function testPostarBlocklistSendsABearerRequestToTheConfiguredEndpoint(): void
+    public function testPostarBlocklistUsesTheDocumentedUnsubscribeEndpoint(): void
     {
         $calls = [];
-        $b = new PostarBlocklist([
-            'apiKey' => 'pk_secret', 'endpoint' => '/v1/anything', 'method' => 'POST',
-            'payload' => fn(string $e, array $c): array => ['email' => $e, 'reason' => $c['reason'] ?? null],
-            'transport' => function (string $m, string $url, array $h, string $body) use (&$calls): array {
-                $calls[] = compact('m', 'url', 'h', 'body');
-                return [202, '{}'];
-            },
-        ]);
-        $b->add('a@b.test', ['reason' => 'user']);
-        $this->assertSame('https://api.postar.vip/v1/anything', $calls[0]['url']);
+        $respond = [201, '{}'];
+        $b = new PostarBlocklist(['apiKey' => 'pk_secret', 'transport' => function (string $m, string $url, array $h, string $body) use (&$calls, &$respond): array {
+            $calls[] = compact('m', 'url', 'h', 'body');
+            return $respond;
+        }]);
+        $b->add('A@b.test');
+        $this->assertSame('POST', $calls[0]['m']);
+        $this->assertSame('https://api.postar.vip/v1/unsubscribes', $calls[0]['url']);
         $this->assertContains('Authorization: Bearer pk_secret', $calls[0]['h']);
-        $this->assertSame(['email' => 'a@b.test', 'reason' => 'user'], json_decode($calls[0]['body'], true));
+        $this->assertContains('Content-Type: application/json', $calls[0]['h']);
+        $this->assertSame(['email' => 'A@b.test'], json_decode($calls[0]['body'], true));
 
-        $failing = new PostarBlocklist(['apiKey' => 'k', 'endpoint' => '/x', 'transport' => fn() => [422, 'nope']]);
+        $respond = [200, '{}']; // already blocked: still success
+        $b->add('a@b.test');
+        $this->assertCount(2, $calls);
+
+        $respond = [200, '{"email":"a@b.test","unsubscribed":true,"source":"recipient","since":"2026-10-31"}'];
+        $this->assertSame('recipient', $b->status('a@b.test')['source']);
+        $this->assertSame('https://api.postar.vip/v1/unsubscribes?email=a%40b.test', $calls[2]['url']);
+        $this->assertSame('GET', $calls[2]['m']);
+
+        $respond = [409, '{"resubscribe_url":"https://postar.vip/r/abc"}'];
+        $this->assertSame(['ok' => false, 'resubscribeUrl' => 'https://postar.vip/r/abc'], $b->remove('a@b.test'), 'a block placed by the recipient cannot be lifted by the app');
+        $respond = [200, '{}'];
+        $this->assertTrue($b->remove('a@b.test')['ok']);
+        $this->assertSame('DELETE', $calls[4]['m']);
+    }
+
+    public function testPostarRefusalsAreErrors(): void
+    {
+        $failing = new PostarBlocklist(['apiKey' => 'k', 'transport' => fn() => [422, 'nope']]);
         $this->expectException(\RuntimeException::class);
         $failing->add('a@b.test');
+    }
+
+    public function testAProviderThatRefusesMailDoesNotBreakTheBlockRequest(): void
+    {
+        $legal = $this->legal([], ['mailSender' => function (): void {
+            throw new \RuntimeException('422 recipient_unsubscribed');
+        }]);
+        $this->assertFalse($legal->email()->requestBlock('already@blocked.test'), 'logged, not thrown');
+    }
+
+    public function testProviderFooterLeavesOutOurStopAllLink(): void
+    {
+        $with = $this->legal()->email()->footer('a@b.test', false);
+        $this->assertStringContainsString('/legal/email-stop', $with['text']);
+        $without = $this->legal([], ['providerFooter' => true])->email()->footer('a@b.test', false);
+        $this->assertStringNotContainsString('/legal/email-stop', $without['text'], 'the provider adds its own unsubscribe link');
     }
 
     // ---- checkout, withdrawal, agents --------------------------------------------------------------------------
@@ -437,5 +471,49 @@ final class NewFeaturesTest extends TestCase
         $legal = $this->legal();
         $this->assertNotContains('app_checklist', array_column($legal->documents(), 'id'));
         $this->assertFalse($legal->has('app_checklist'));
+    }
+
+    // ---- the older "we updated our terms" filter, and hints --------------------------------------------------
+
+    public function testTheOlderAcceptanceFilterNowShowsTheWholeChecklist(): void
+    {
+        $legal = $this->legal(['feature' => ['age_gate' => true, 'anonymous' => true], 'policy' => ['age_gate' => '18', 'age_topics' => 'chat']]);
+        Yii::$app->user->setIdentity(new TestIdentity(['id' => 51]));
+        // The user already accepted the documents in the old way, but never confirmed the age.
+        $legal->acceptance()->record(51, ['terms', 'privacy']);
+        $legal->consents()->record(51, ['terms' => 1, 'privacy' => 1, 'age' => 1]);
+        $legal = $this->legal(['feature' => ['age_gate' => true]], [], false);
+        $legal->consents()->store()->save('52', []);
+        Yii::$app->user->setIdentity(new TestIdentity(['id' => 52]));
+        $filter = new \rapttor\yii2legal\filters\AcceptanceFilter();
+        $controller = new \yii\web\Controller('site', Yii::$app);
+        $this->assertFalse($filter->beforeAction(new \yii\base\InlineAction('index', $controller, 'actionIndex')));
+        $this->assertStringContainsString('/legal/consents', (string)Yii::$app->response->headers->get('Location'), 'not the document-only page');
+        $page = (string)Yii::$app->runAction('legal/consents');
+        $this->assertStringContainsString('consent[age]', $page);
+        $this->assertStringContainsString('at least 18 years old', $page);
+    }
+
+    public function testDocumentsAcceptedInTheChecklistAreAlsoInTheAcceptanceLog(): void
+    {
+        $legal = $this->legal();
+        $legal->consents()->record(61, ['terms' => 1, 'privacy' => 1]);
+        $accepted = $legal->acceptance()->accepted(61);
+        $this->assertSame($legal->document('terms')['version'], $accepted['terms']);
+        $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 61, 'document' => 'terms'])->one();
+        $this->assertSame('consents', $row['source']);
+    }
+
+    public function testHintsPointAtLikelyGaps(): void
+    {
+        $hints = fn(array $cfg, array $props = []): string => implode(' | ', $this->legal($cfg, $props)->hints());
+        $this->assertStringContainsString('feature.age_gate', $hints(['feature' => ['anonymous' => true]]));
+        $this->assertStringNotContainsString('feature.age_gate is off', $hints(['feature' => ['anonymous' => true, 'age_gate' => true], 'policy' => ['age_topics' => 'chat']]));
+        $this->assertStringContainsString('policy.age_topics', $hints(['feature' => ['age_gate' => true]]));
+        $this->assertStringContainsString('feature.external is off', $hints(['data' => ['external' => [['key' => 'maps']]]]));
+        $this->assertStringContainsString('data.external is empty', $hints(['feature' => ['external' => true]]));
+        $this->assertStringContainsString('DMCA', $hints(['feature' => ['uploads' => true]]));
+        $this->assertStringContainsString('legal/agents', $hints([]), 'no AGENTS.md block in the test app');
+        $this->assertStringContainsString("no such column", $hints([], ['consentStore' => ['class' => JsonAttributeConsentStore::class, 'modelClass' => TestUserRecord::class, 'attribute' => 'missing_col']]));
     }
 }

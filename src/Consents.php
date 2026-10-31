@@ -131,10 +131,25 @@ final class Consents
             }
         }
         $this->store()->save((string)$userId, $state);
+        $this->logDocuments($userId, $pending, $answers, $lang);
         if ($cookie !== [] && Yii::$app instanceof \yii\web\Application) {
             $this->legal->consent()->merge($cookie); // the browser follows the account's choice for third-party resources
         }
         return ['ok' => true, 'missing' => []];
+    }
+
+    /** Documents accepted here also go to the acceptance log (version, language, time, hashed IP) when its table exists. */
+    private function logDocuments(int|string $userId, array $pending, array $answers, string $lang): void
+    {
+        $docs = array_values(array_map(static fn(array $d): string => $d['key'], array_filter($pending, static fn(array $d): bool => $d['kind'] === 'document' && !empty($answers[$d['key']]))));
+        if ($docs === [] || !is_numeric($userId)) {
+            return;
+        }
+        try {
+            $this->legal->acceptance()->record((int)$userId, $docs, 'consents', null, $lang);
+        } catch (\Throwable $e) {
+            Yii::warning('Acceptance log not written: ' . $e->getMessage(), __METHOD__);
+        }
     }
 
     /** "1.1.3" => "1.1": a wording fix (PATCH) does not ask again. */

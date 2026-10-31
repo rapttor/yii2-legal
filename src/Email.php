@@ -84,7 +84,7 @@ final class Email
     }
 
     /**
-     * Footer for every email.
+     * Footer for every email. With `Legal::$providerFooter` the "stop all email" link is left out because the provider appends its own.
      *
      * @return array{html:string,text:string}
      */
@@ -95,7 +95,9 @@ final class Email
         if ($optional) {
             $links[] = [$this->legal->t('email.optional_stop', [], $lang), $this->unsubscribeUrl($email)];
         }
-        $links[] = [$this->legal->t('email.stop_all', ['{product}' => $product], $lang), $this->stopUrl($email)];
+        if (!$this->legal->providerFooter) {
+            $links[] = [$this->legal->t('email.stop_all', ['{product}' => $product], $lang), $this->stopUrl($email)];
+        }
         $text = $this->legal->t('email.footer', ['{product}' => $product], $lang);
         $html = Html::encode($text);
         foreach ($links as [$label, $url]) {
@@ -147,8 +149,14 @@ final class Email
         $link = Url::to(['/' . $this->legal->routePrefix . '/email-confirm', 't' => $raw], true);
         $product = $this->legal->productName();
         $body = $this->legal->t('email.confirm_body', ['{product}' => $product, '{email}' => $e, '{link}' => $link], $lang);
-        $this->send($e, $this->legal->t('email.confirm_subject', ['{product}' => $product], $lang),
-            '<p>' . nl2br(Html::encode(str_replace($link, '', $body))) . '</p><p>' . Html::a(Html::encode($link), $link) . '</p>', $body);
+        try {
+            $this->send($e, $this->legal->t('email.confirm_subject', ['{product}' => $product], $lang),
+                '<p>' . nl2br(Html::encode(str_replace($link, '', $body))) . '</p><p>' . Html::a(Html::encode($link), $link) . '</p>', $body);
+        } catch (\Throwable $ex) {
+            // For example the provider refuses mail to an address that is already blocked (Postar: 422 recipient_unsubscribed).
+            Yii::warning('Block confirmation email not sent: ' . $ex->getMessage(), __METHOD__);
+            return false;
+        }
         return true;
     }
 

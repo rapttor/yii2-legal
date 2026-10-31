@@ -54,6 +54,10 @@ final class LegalController extends Controller
                 $legal->markdown($d['id'], $lang);
             }
         }
+        $hints = $legal->hints();
+        if ($hints !== []) {
+            $this->stdout("\nHints (not errors):\n  - " . implode("\n  - ", $hints) . "\n");
+        }
         $open = array_filter($legal->claims(), static fn($c) => !$c['confirmed']);
         if ($open !== [] && !$this->skipClaims) {
             $this->stderr("\n" . count($open) . " claim(s) in the published documents are not confirmed. Check each against the product, then add the id to Legal::\$confirmedClaims (run `yii legal/claims`):\n");

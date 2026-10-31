@@ -80,6 +80,8 @@ class Legal extends Component
     public mixed $mailSender = null;
     /** Mailbox for mail-client unsubscribe (mailto:) in List-Unsubscribe; optional. */
     public ?string $unsubscribeMailto = null;
+    /** True when your email provider appends its own unsubscribe link to every message (Postar does): our footer then omits the "stop all email" link instead of showing two. */
+    public bool $providerFooter = false;
     /** Where "block all email" requests are also sent, e.g. your email provider's blocklist. Object, config array, or null (local list only). */
     public mixed $blocklist = null;
     /** Event raised after a consumer withdraws from a contract (see WithdrawalEvent): process the refund here. */
@@ -121,6 +123,55 @@ class Legal extends Component
     private ?Consents $consentsService = null;
     private ?External $externalService = null;
     private ?Email $emailService = null;
+
+    /**
+     * Likely gaps in the config or the integration. Not errors: things an owner or an AI agent should look at.
+     *
+     * @return list<string>
+     */
+    public function hints(): array
+    {
+        $c = $this->effectiveConfig();
+        $f = $c['feature'] ?? [];
+        $h = [];
+        if (!empty($f['anonymous']) && empty($f['age_gate'])) {
+            $h[] = 'feature.anonymous is on but feature.age_gate is off: anonymous accounts need the age and legal-age confirmation (set feature.age_gate, policy.age_gate and policy.age_topics).';
+        }
+        if (!empty($f['age_gate']) && empty($c['policy']['age_topics'])) {
+            $h[] = 'feature.age_gate is on but policy.age_topics is empty: say what the confirmation is for (for example "chat and gambling-style games").';
+        }
+        if (!empty($c['data']['external']) && empty($f['external'])) {
+            $h[] = 'data.external lists third-party resources but feature.external is off: the Privacy and Cookie Policies will not mention them.';
+        }
+        if (!empty($f['external']) && empty($c['data']['external'])) {
+            $h[] = 'feature.external is on but data.external is empty: list every resource that receives the visitor\'s IP address (fonts, maps, video, captcha).';
+        }
+        if (!empty($f['merchant_of_record']) && empty($c['payments']['provider'])) {
+            $h[] = 'feature.merchant_of_record is on but payments.provider is empty.';
+        }
+        if ((!empty($f['ugc']) || !empty($f['uploads'])) && empty($c['company']['dmca_agent'])) {
+            $h[] = 'The app stores user content: register a DMCA designated agent (dmca.copyright.gov) and set company.dmca_agent and company.dmca_number.';
+        }
+        $store = $this->consentStore;
+        if (is_array($store) && is_a((string)($store['class'] ?? ''), stores\JsonAttributeConsentStore::class, true) && !empty($store['modelClass'])) {
+            try {
+                $col = $store['attribute'] ?? 'consents';
+                if (!isset(($store['modelClass'])::getTableSchema()->columns[$col])) {
+                    $h[] = "consentStore keeps consents in the '$col' attribute of {$store['modelClass']}, but its table has no such column: add a TEXT or JSON column named $col.";
+                }
+            } catch (\Throwable) {
+                // model not loadable here (console without the app models): nothing to say
+            }
+        }
+        try {
+            $agents = Yii::getAlias('@app/AGENTS.md');
+            if (!is_file($agents) || !str_contains((string)file_get_contents($agents), 'rapttor-legal:begin')) {
+                $h[] = 'AGENTS.md has no legal checklist block: run `php yii legal/agents --llms` so AI coding agents get the rules for this app (age confirmation, consents, uploads, email, payments).';
+            }
+        } catch (\Throwable) {
+        }
+        return $h;
+    }
 
     /** The name users know the service by: config product.name, else the company name. */
     public function productName(): string

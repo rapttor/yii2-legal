@@ -14,7 +14,7 @@ use yii\base\ActionFilter;
  *
  *     'as legalConsents' => ['class' => rapttor\yii2legal\filters\ConsentGate::class],
  */
-final class ConsentGate extends ActionFilter
+class ConsentGate extends ActionFilter
 {
     /** Routes (fnmatch patterns) that never redirect. @var list<string> */
     public array $exceptRoutes = ['legal/*', 'site/login', 'site/logout', 'site/error', 'debug/*', 'gii/*'];
