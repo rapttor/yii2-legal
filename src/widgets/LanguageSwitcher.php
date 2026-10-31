@@ -32,7 +32,7 @@ final class LanguageSwitcher extends Widget
     public ?bool $flags = null;
     /** @var array<string,string> language tag => flag emoji */
     public const FLAGS = [
-        'en' => '🇬🇧', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
+        'en' => '🇬🇧', 'sh' => '●', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
         'pt-BR' => '🇧🇷', 'it' => '🇮🇹', 'pl' => '🇵🇱', 'nl' => '🇳🇱', 'tr' => '🇹🇷', 'uk' => '🇺🇦', 'ru' => '🇷🇺', 'ar' => '🇸🇦', 'hi' => '🇮🇳',
         'ja' => '🇯🇵', 'ko' => '🇰🇷', 'zh-Hans' => '🇨🇳',
     ];

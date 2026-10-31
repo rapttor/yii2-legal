@@ -100,7 +100,8 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame(['terms', 'privacy', 'age', 'uploads', 'marketing', 'ext_google_fonts'], $keys($legal));
         $defs = array_column($legal->consents()->definitions(), null, 'key');
         $this->assertTrue($defs['age']['required']);
-        $this->assertStringContainsString('at least 16 years old', $defs['age']['label']);
+        $this->assertStringContainsString('legal age', $defs['age']['label']);
+        $this->assertStringContainsString('at least 16 years old', $defs['age']['hint']);
         $this->assertStringContainsString('chat', $defs['age']['hint'], 'the explanation sits in the hint, the label stays short');
         $this->assertFalse($defs['marketing']['required']);
         $this->assertFalse($defs['ext_google_fonts']['required']);
@@ -530,7 +531,7 @@ final class NewFeaturesTest extends TestCase
         $this->assertSame(['terms', 'privacy', 'age', 'uploads'], array_keys($defs));
         $this->assertTrue($defs['age']['required']);
         $this->assertTrue($defs['uploads']['required']);
-        $this->assertStringContainsString('at least 18 years old', $defs['age']['label']);
+        $this->assertStringContainsString('at least 18 years old', $defs['age']['hint']);
         $this->assertStringContainsString('this service', $defs['age']['hint'], 'generic wording when the app names no topics');
         $this->assertCount(4, $legal->consents()->blocking(1), 'a new account must answer all four before using the app');
     }
@@ -548,7 +549,7 @@ final class NewFeaturesTest extends TestCase
         $legal = $this->legal(['policy' => ['age_topics' => 'chat and games', 'age_gate' => '16']], [], true, true);
         $age = array_column($legal->consents()->definitions(), null, 'key')['age'];
         $this->assertSame('16', $age['version'], 'changing the age asks everybody again');
-        $this->assertStringContainsString('at least 16 years old', $age['label']);
+        $this->assertStringContainsString('at least 16 years old', $age['hint']);
         $this->assertStringContainsString('chat and games', $age['hint']);
     }
 

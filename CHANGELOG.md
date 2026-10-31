@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.2 (requires rapttor/legal ^2.6.2)
+- **The age checkbox says "I am of legal age in my country"; the number is only in the small print** (`consent.age` label, level in the hint). Balkan wording per the owner's rules (fajl, dodajem). Balkan switcher entry shows a black dot instead of a flag.
+
 ## 2.8.1 (requires rapttor/legal ^2.6.1)
 - Regional embargoes (Crimea, Donetsk, Luhansk) are shown by their own names in the regions checkbox, not as the whole country.
 

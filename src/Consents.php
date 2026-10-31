@@ -55,8 +55,8 @@ final class Consents
             $level = (string)($cfg['policy']['age_gate'] ?? '18');
             $topics = trim((string)($cfg['policy']['age_topics'] ?? ''));
             $out[] = ['key' => 'age', 'version' => $level, 'required' => true, 'kind' => 'age', 'url' => null,
-                'label' => $this->legal->t('consent.age', ['{level}' => $level], $lang),
-                'hint' => $topics !== '' ? $this->legal->t('consent.age_hint', ['{topics}' => $topics], $lang) : $this->legal->t('consent.age_generic', [], $lang)];
+                'label' => $this->legal->t('consent.age', [], $lang),
+                'hint' => $topics !== '' ? $this->legal->t('consent.age_hint', ['{level}' => $level, '{topics}' => $topics], $lang) : $this->legal->t('consent.age_generic', ['{level}' => $level], $lang)];
         }
         if (!empty($f['gambling'])) {
             $lvl = (string)($cfg['policy']['gambling_age'] ?? '18');
