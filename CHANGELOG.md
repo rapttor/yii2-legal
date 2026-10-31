@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.8.5
+- Docs: README covers the languages and the language strip, the new-account sign-in with `ConsentChecklist`, short labels with hints, activity tags and country lists, privacy and legal requests, `exceptCan`, the new console commands and options; AGENTS.md and llms.txt updated.
+
 ## 2.8.4
 - **Language strip on the legal pages themselves** (document pages and the index): flags with short names in one row at the top, linking to the same document in each language. The Balkan language shows the region's outline (a 3 KB mask in the text colour) instead of a flag; see NOTICE.
 

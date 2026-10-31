@@ -17,3 +17,6 @@ Integrating or changing this package: read AGENTS.md first. It lists what to ask
 - Activity tags (`policy.activities`: gambling, alcohol, tobacco, cannabis, adult, dating, lgbtq, crypto, vpn, weapons, pharmacy, sanctions) add the countries that prohibit them to a required visitor checkbox; `php yii legal/restrictions [tag]` lists the data (sources and confidence per country)
 - Privacy and legal requests: `/legal/request`, `Yii::$app->legal->requests()`, `Legal::EVENT_REQUEST` to alert admins; no reply times on pages
 - Consents are stored through https://github.com/rapttor/yii2-metadata (`Yii::$app->metadata`, row `key=legal`, `remote_table=profile`): history, `export()` for access requests, `deleteAll()` on account deletion
+- New-account sign-in: `ConsentChecklist` widget and `consents()->missingRequired()`; the title is `appName()`; every consent is its own unticked checkbox with a short title and small-print hint; `LanguageSwitcher::widget(['sameRoute' => true])` above the form
+- Languages: English, Balkan `sh` (aliases sr, hr, bs, cnr, sr-Cyrl), de, fr, es, pt-BR, it, pl, nl, tr, uk, ru, ar, hi, ja, ko, zh-Hans (drafts); Balkan wording rules in rapttor/legal `i18n/BRIEF-sh.md`
+- Your own superadmins skip the consent gate (`exceptCan`); tenant admins consent like everybody else

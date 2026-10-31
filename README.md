@@ -57,17 +57,18 @@ Link to the Terms and Privacy Policy at sign-up and checkout. Documents that you
 ```php
 'legal' => [
     'class' => rapttor\yii2legal\Legal::class,
-    'languages' => ['en', 'sr', 'sr-Cyrl', 'hr'],   // offered languages, in switcher order; omit for every available one
+    'languages' => ['en', 'sh', 'de', 'fr'],       // offered languages, in switcher order; omit for every available one
     'publishDrafts' => false,                      // draft translations stay hidden until a lawyer reviews them
     'config' => [...],
 ],
 ```
 
-- Pages: `/legal/terms` (the application's language), `/legal/hr/terms`, `/legal/sr-Cyrl/terms`. A language that is not offered returns 404; a document that is not translated yet shows the English one with a notice (`fallbackNotice`).
-- `<?= rapttor\yii2legal\widgets\LanguageSwitcher::widget() ?>` lists every offered language by its own name and links to the same document in each. Narrow or reorder it where you place it: `['only' => ['en', 'sr']]`, rename with `'labels' => ['sr' => 'SR']`, `'hideIfSingle' => false` to keep a one-language list. On non-document pages it links to the legal index.
+- Pages: `/legal/terms` (the application's language), `/legal/sh/terms`, `/legal/de/terms`. A language that is not offered returns 404; a document that is not translated yet shows the English one with a notice (`fallbackNotice`).
+- `<?= rapttor\yii2legal\widgets\LanguageSwitcher::widget() ?>` lists every offered language by its own name and links to the same document in each. Narrow or reorder it where you place it: `['only' => ['en', 'sh']]`, rename with `'labels' => ['sh' => 'BHMS']`, `'hideIfSingle' => false` to keep a one-language list. On non-document pages it links to the legal index.
 - `hreflang` alternates and `Content-Language` are set for you; text direction follows the language (`dir="rtl"` for Arabic).
-- `LegalLinks::widget(['lang' => 'sr'])` lists the documents in a chosen language.
-- Serbian Cyrillic is generated from the Latin text. Croatian, Bosnian and Montenegrin use their own vocabulary and `law.jurisdiction` (`hr`, `ba`, `me`) for governing law and authority.
+- `LegalLinks::widget(['lang' => 'sh'])` lists the documents in a chosen language.
+- **Available languages** (drafts until a native-speaking lawyer reviews them; `publishDrafts` shows them): English, **Balkan `sh`** (one Latin, ijekavian text for Bosnia, Croatia, Montenegro and Serbia; the tags sr, hr, bs, cnr and sr-Cyrl are aliases of it), German, French, Spanish, Brazilian Portuguese, Italian, Polish, Dutch, Turkish, Ukrainian, Russian, Arabic, Hindi, Japanese, Korean and Simplified Chinese. `law.jurisdiction` (`rs`, `hr`, `ba`, `me`, `gb`, `de`) supplies governing law and authority independently of the language.
+- **The language strip**: every legal page and consent screen shows one row at the top, flag above a short language name (the Balkan language shows the region's outline in the text colour instead of a flag, no national symbol). `LanguageSwitcher::widget(['compact' => true, 'flags' => true])` makes it anywhere; with `'sameRoute' => true` the links keep the current page and add `?lang=xx` (the consent screens and the sign-up step), and the choice is remembered in the `legal_lang` cookie (preference, 1 year: add it to your cookie list). The visitor's language choice does not depend on the application's language. Put the strip outside a narrow column so every language fits in one row (it scrolls sideways on a phone).
 
 ## Acceptance log and re-consent
 
@@ -97,8 +98,31 @@ Instead of one tick box, keep a **versioned list of consents with the account**.
 
 Required items block use; optional ones are asked once per version and may be declined; a new version of an item asks again.
 
+**Every item is its own checkbox, unticked, with a short title (about 45 characters at most) and the explanation in small print below it** (`label` and `hint`). Nothing is bundled into one "accept all". The visitor can change the language on the same screen. For each answer the account keeps the version, time, language, source, keyed hashes of IP and browser details, and hashes of the wording and document text shown, and earlier answers stay in the row's `history`.
+
+### Sign-in of a new account
+
+Put the checklist in the form that creates the account, so nobody gets an account without having ticked each item:
+
 ```php
-'consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sr' => 'Poštovaću pravila četa.']]],
+// view: LanguageSwitcher::widget(['sameRoute' => true]) above the card, then in the form
+echo rapttor\yii2legal\widgets\ConsentChecklist::widget(['missing' => $missing ?? []]);
+// controller, before creating the account, then after
+$missing = Yii::$app->legal->consents()->missingRequired((array)Yii::$app->request->post('consent', []));
+Yii::$app->legal->consents()->record($user->id, $answers, 'signup');
+```
+The page title is `Yii::$app->legal->appName()`; an intro appears only if you set `signupIntro` (a string or a language map). Your own superadmin accounts can skip the screen: `'as legalConsents' => ['class' => ConsentGate::class, 'exceptCan' => ['superadmin']]`. Admins of a tenant or customer are asked like everybody else.
+
+### What the app does that some countries prohibit
+
+Set the activities in the legal config (comma separated tags): `'policy' => ['activities' => 'gambling,alcohol,sanctions']`. `feature.gambling` adds `gambling` by itself. The tags are `gambling`, `alcohol`, `tobacco`, `cannabis`, `adult`, `dating`, `lgbtq`, `crypto`, `vpn`, `weapons`, `pharmacy` and `sanctions` (add `sanctions` to every app). The visitor then ticks one more required box, "I am not in a restricted country", whose small print lists the countries that prohibit those activities, in the visitor's language. The terms carry the matching clause.
+
+- The country lists are the dataset `restrictions/<tag>.json` of `rapttor/legal`: per country the status, scope (online/offline), a note, a source and a confidence level. **It is a research starting point, mostly medium and low confidence: counsel confirms it for your markets.** Only status `prohibited` is asked by default (`policy.restriction_status` adds `licensed` or `restricted`); add countries by hand in `policy.excluded_regions`.
+- We cannot see where a visitor really is (VPNs, travel), so the app never claims to block those countries: the checkbox and its record are the point.
+- `php yii legal/restrictions` lists the tags, `php yii legal/restrictions gambling` the countries with source and confidence.
+
+```php
+'consents' => [['key' => 'chat_rules', 'required' => true, 'version' => '1', 'label' => ['en' => 'I will follow the chat rules.', 'sh' => 'Poštujem pravila četa.'], 'hint' => ['en' => 'Small print under the short title.']]],
 ```
 
 ```php
@@ -126,6 +150,20 @@ The column then holds, per consent key, the version, whether it was granted, whe
 ### The "we updated our terms" popup
 
 `AcceptanceFilter` (first release) only showed the documents. It is deprecated and now behaves exactly like `ConsentGate`, so one screen carries everything: documents, the age and legal-age confirmation (`feature.age_gate`, `policy.age_gate` = 13, 16, 18 or 21, `policy.age_topics`), upload responsibility and optional choices. If the age confirmation does not appear, `php yii legal/check` tells you why (feature flag off, gate not attached, route excluded, old package version).
+
+## Privacy and legal requests
+
+The route `/legal/request` is a form for access, export, correction, deletion, objection, copyright notices, abuse reports and other messages. Each request is stored (table `legal_request`, run `php yii migrate`), the privacy or legal mailbox gets an email, and **`Legal::EVENT_REQUEST` is raised so your app can alert its admins**:
+
+```php
+Yii::$app->legal->on(rapttor\yii2legal\Legal::EVENT_REQUEST, function (rapttor\yii2legal\events\RequestEvent $e) {
+    // chat message, ticket, email to a monitored mailbox, backoffice badge ...
+});
+Yii::$app->legal->requests()->open();            // open requests, soonest due first (show them in your backoffice)
+Yii::$app->legal->requests()->overdue();
+Yii::$app->legal->requests()->close($id, 'done', 'exported and sent');
+```
+Privacy rights get an internal due date (`requestDueDays`, 30 days: the usual legal limit, check yours); it is never shown to the requester, and **the pages promise no reply time**. A honeypot field and a per-connection limit (`requestsPerHour`) keep it from being flooded. Link the form from your footer.
 
 ## Third-party resources and fonts
 
@@ -174,6 +212,10 @@ Set `'license' => ['id' => 'MIT']` in the config (pick an id with `vendor/bin/li
 ```bash
 php yii legal/check                 # validates the config, lists published documents; exit 1 if required values are missing (CI)
 php yii legal/export web/legal html # static HTML (or md) of every document
+php yii legal/agents --llms          # write the checklist, activity tags and country lists into AGENTS.md and llms.txt for AI coding agents
+php yii legal/restrictions [tag]     # the restrictions dataset
+php yii legal/requests               # open privacy and legal requests, overdue first
+php yii legal/request-close 12 --status=done --note="exported"
 ```
 
 ## Safety
@@ -189,7 +231,7 @@ php yii legal/export web/legal html # static HTML (or md) of every document
 
 ## Options (`Legal`)
 
-`config`, `configFile`, `routePrefix` (`legal`), `language` (defaults to app language, English fallback), `cache` (`cache` or `null`), `archive`, `archivePath`, `purifier` (extra HTML Purifier options), `libraryRoot` (tests).
+`config`, `configFile`, `routePrefix` (`legal`), `signupIntro`, `requestDueDays`, `requestsPerHour`, `metadataTable` / `metadataKey` / `metadataRemoteTable`, `languageParam` / `languageCookie`, `consentStore`, `consents`, `language` (defaults to app language, English fallback), `cache` (`cache` or `null`), `archive`, `archivePath`, `purifier` (extra HTML Purifier options), `libraryRoot` (tests).
 
 ## Test
 
