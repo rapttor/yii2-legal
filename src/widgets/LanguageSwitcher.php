@@ -59,7 +59,8 @@ final class LanguageSwitcher extends Widget
             ] + ($l['current'] ? ['aria-current' => 'true'] : []));
             $items .= Html::tag('li', $a, $l['current'] ? ['class' => 'is-current'] : []);
         }
-        return Html::tag('ul', $items, $this->options);
+        $options = $this->options + ($this->sameRoute ? ['style' => 'list-style:none;padding:0;margin:0 0 1rem;display:flex;gap:1rem;flex-wrap:wrap'] : []);
+        return Html::tag('ul', $items, $options);
     }
 
     private function currentDocument(): ?string

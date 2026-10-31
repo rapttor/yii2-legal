@@ -17,16 +17,7 @@ $this->title = $legal->t('consents.title');
     <?php if ($missing !== []): ?><p class="legal-error" role="alert"><?= Html::encode($legal->t('consents.error')) ?></p><?php endif ?>
     <?= Html::beginForm('', 'post') ?>
     <?= Html::hiddenInput('return', $return) ?>
-    <?php foreach ($pending as $d): ?>
-        <p class="legal-consent-item<?= in_array($d['key'], $missing, true) ? ' legal-consent-missing' : '' ?>">
-            <label>
-                <?= Html::checkbox('consent[' . $d['key'] . ']', false, ['value' => '1']) ?>
-                <?= Html::encode($d['label']) ?>
-                <small>(<?= Html::encode($legal->t($d['required'] ? 'consents.required' : 'consents.optional')) ?>)</small>
-            </label>
-            <?php if ($d['url']): ?> <a href="<?= Html::encode($d['url']) ?>" target="_blank" rel="noopener"><?= Html::encode($legal->t('consents.read')) ?></a><?php endif ?>
-        </p>
-    <?php endforeach ?>
+    <?= rapttor\yii2legal\widgets\ConsentChecklist::widget(['items' => $pending, 'missing' => $missing]) ?>
     <p><small><?= Html::encode($legal->t('consents.note')) ?></small></p>
     <p><?= Html::submitButton(Html::encode($legal->t('consents.button')), ['class' => 'legal-btn']) ?></p>
     <?= Html::endForm() ?>

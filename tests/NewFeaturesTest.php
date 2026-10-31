@@ -657,4 +657,16 @@ final class NewFeaturesTest extends TestCase
         $legal3 = $this->legal();
         $this->assertArrayNotHasKey('regions', array_column($legal3->consents()->definitions('en'), null, 'key'));
     }
+
+    public function testChecklistWidgetAndSignupCheck(): void
+    {
+        $legal = $this->legal([], [], true, true);
+        $html = \rapttor\yii2legal\widgets\ConsentChecklist::widget();
+        $this->assertGreaterThanOrEqual(4, substr_count($html, 'type="checkbox"'), 'one box per item');
+        $this->assertStringNotContainsString('checked', $html, 'never pre-ticked');
+        $this->assertStringContainsString('name="consent[terms]"', $html);
+        $this->assertSame(['terms', 'privacy', 'age', 'uploads'], $legal->consents()->missingRequired([]));
+        $this->assertSame(['privacy', 'age', 'uploads'], $legal->consents()->missingRequired(['terms' => '1']));
+        $this->assertSame([], $legal->consents()->missingRequired(['terms' => '1', 'privacy' => '1', 'age' => '1', 'uploads' => '1']));
+    }
 }

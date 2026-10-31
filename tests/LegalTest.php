@@ -158,8 +158,8 @@ final class LegalTest extends TestCase
         $this->assertSame('sr', $d['lang']);
         $this->assertFalse($d['fallback']);
         $this->assertStringContainsString('kolačić', mb_strtolower($legal->html('cookies', 'sr')));
-        $this->assertSame('en', $legal->document('cookies', 'de')['lang'], 'untranslated language shows the English document');
-        $this->assertTrue($legal->document('cookies', 'de')['fallback']);
+        $this->assertSame('en', $legal->document('cookies', 'ru')['lang'], 'untranslated language shows the English document');
+        $this->assertTrue($legal->document('cookies', 'ru')['fallback']);
     }
 
     public function testCyrillicIsGeneratedFromSerbianLatin(): void

@@ -98,6 +98,15 @@ final class Consents
         return array_values(array_filter($this->definitions($lang), static fn(array $d): bool => ($state[$d['key']]['v'] ?? null) !== $d['version']));
     }
 
+    /** Required items that were not granted in $answers: for a form shown before the account exists (sign-up). @return list<string> keys */
+    public function missingRequired(array $answers): array
+    {
+        return array_values(array_map(static fn(array $d): string => $d['key'], array_filter(
+            $this->definitions(),
+            static fn(array $d): bool => $d['required'] && empty($answers[$d['key']])
+        )));
+    }
+
     /** Pending items that must be granted before the app may be used. @return list<array<string,mixed>> */
     public function blocking(int|string $userId, ?string $lang = null): array
     {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.0 (requires rapttor/legal ^2.5)
+- **`ConsentChecklist` widget**: the consents as separate unticked boxes (`consent[<key>]`) for the sign-in form of a new account, plus `Consents::missingRequired($answers)`: a new account is created only after every required item was ticked on its own, then stored with `consents()->record($user->id, $answers, 'signup')`. The consents page uses the same widget.
+- Screen texts in de, fr, es, pt-BR, it, pl, nl and tr (drafts); the language switcher on consent forms renders as a row.
+
 ## 2.5.0 (requires rapttor/legal ^2.4)
 - **Privacy and legal requests**: public form `/legal/request` (access, export, correction, deletion, objection, copyright, abuse, other), table `legal_request`, `Legal::requests()` (`submit`, `open`, `overdue`, `close`), mail to the privacy or legal mailbox, `Legal::EVENT_REQUEST` (`RequestEvent`) so the app can alert its admins, honeypot and a per-connection limit, internal due dates (`requestDueDays`, one month for privacy rights) that are never shown to the requester. Console `yii legal/requests` and `yii legal/request-close`. `legal/check` hints when nothing handles the event. Run `php yii migrate`.
 - **Excluded regions**: `policy.excluded_regions` adds a required consent "I am not located in, and am not a resident or national of ..." (the version follows the list, so a change asks everyone again).
