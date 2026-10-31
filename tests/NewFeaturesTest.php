@@ -591,7 +591,8 @@ final class NewFeaturesTest extends TestCase
         $now['age']['at'] += 5;
         $store->save('77', $now);
         $this->assertCount(1, $store->history('77'), 'a changed answer keeps the earlier one in history');
-        $this->assertSame('age', $store->history('77')[0]['key']);
+        $this->assertSame('age', $store->history('77')[0]['entry']);
+        $this->assertSame('18', $store->history('77', 'age')[0]['value']['v']);
         $row = (new \yii\db\Query())->from('legal_acceptance')->where(['user_id' => 77, 'document' => 'terms'])->one();
         $this->assertStringContainsString('evidence', (string)$row['context']);
         $this->assertArrayHasKey('ua_hash', $row);

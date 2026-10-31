@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0
+- Requires `rapttor/yii2-metadata ^1.0`: `MetadataConsentStore` is now a thin wrapper over its `Metadata` component (uses the app's `metadata` component when registered, so `noHistory`, `historyMax`, `export()` and `deleteAll()` apply; otherwise a default one on `metadataTable`). The table is created by `Schema::create` via that package.
+- History entries now have the metadata package's shape: `entry`, `rev`, `replaced_at`, `value` (was `key` plus the old fields). `MetadataConsentStore::history($userId, $consent = null)`.
+- AGENTS.md: register the `metadata` component, delete and export a user's rows with the account.
+
 ## 2.3.0
 - **Consents are kept in the shared `rapttor_metadata` table** (`MetadataConsentStore`, now the default): one row per user, `key=legal`, `remote_table=profile`, `remote_id=<user id>`, `content` (current state, JSON), `history` (earlier versions of changed answers, up to 200), `rev` (checked on save, so concurrent saves cannot overwrite each other). Table, key and remote table are configurable (`metadataTable`, `metadataKey`, `metadataRemoteTable`); other features can use the same table under other keys.
 - Removed `TableConsentStore` and the `legal_consent` table (nothing used it); `JsonAttributeConsentStore` stays an option. `php yii migrate` creates the metadata table. Per-entry `history` inside the state is gone (the row's `history` replaces it).

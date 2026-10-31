@@ -14,11 +14,7 @@ final class Schema
         Acceptance::createTable($db, $legal->acceptanceTable);
         self::ensureContext($db, $legal->acceptanceTable);
         self::ensureColumn($db, $legal->acceptanceTable, 'ua_hash', 'string(64) NULL');
-        $long = $db->driverName === 'mysql' ? 'longtext' : 'text';
-        self::table($db, $legal->metadataTable, [
-            'id' => 'pk', 'key' => 'string(64) NOT NULL', 'remote_table' => 'string(64) NOT NULL', 'remote_id' => 'string(64) NOT NULL',
-            'content' => $long . ' NULL', 'history' => $long . ' NULL', 'rev' => 'integer NOT NULL DEFAULT 1', 'updated_at' => 'integer NOT NULL',
-        ], [['key', 'remote_table', 'remote_id']], true);
+        \rapttor\yii2metadata\Schema::create($db, $legal->metadataTable);
         self::table($db, $legal->suppressionTable, [
             'id' => 'pk', 'email' => 'string(254) NOT NULL', 'scope' => 'string(12) NOT NULL', 'source' => 'string(24) NULL', 'created_at' => 'integer NOT NULL',
         ], [['email', 'scope']], true);

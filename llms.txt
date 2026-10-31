@@ -14,3 +14,4 @@ Integrating or changing this package: read AGENTS.md first. It lists what to ask
 - [src/controllers/LegalController.php](src/controllers/LegalController.php): pages, hreflang, fallback notice
 - [tests/LegalTest.php](tests/LegalTest.php): behaviour covered (sanitising, fallback to last good render, languages, routes)
 - Upstream texts and rules: https://github.com/rapttor/rapttor.legal (AGENTS.md, SPEC.md)
+- Consents are stored through https://github.com/rapttor/yii2-metadata (`Yii::$app->metadata`, row `key=legal`, `remote_table=profile`): history, `export()` for access requests, `deleteAll()` on account deletion
