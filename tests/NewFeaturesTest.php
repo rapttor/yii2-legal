@@ -763,4 +763,25 @@ final class NewFeaturesTest extends TestCase
         $this->assertStringContainsString('Attribution', $page);
         $this->assertStringContainsString('aria-current="page"', $page);
     }
+
+    public function testNewLanguagesAreOfferedAndMexicanSpanishHasItsOwnTexts(): void
+    {
+        $legal = $this->legal([], ['publishDrafts' => true]);
+        foreach (['sv', 'ro', 'id', 'vi', 'es-MX'] as $tag) {
+            $this->assertContains($tag, $legal->offered(), $tag);
+            $this->assertFalse($legal->document('terms', $tag)['fallback'], "$tag has its own terms");
+        }
+        $this->assertSame('es-MX', $legal->resolve('es-MX'), 'Mexican Spanish is its own language, not an alias of es');
+        $this->assertNotSame($legal->t('consent.accept_doc', ['{doc}' => 'X'], 'es'), $legal->t('consent.accept_doc', ['{doc}' => 'X'], 'sv'));
+        $this->assertStringContainsString('Jag', $legal->t('consent.accept_doc', ['{doc}' => 'X'], 'sv'));
+    }
+
+    public function testStripNamesTwoSpanishVariantsApart(): void
+    {
+        $this->legal([], ['publishDrafts' => true, 'languages' => ['en', 'es', 'es-MX']]);
+        $html = \rapttor\yii2legal\widgets\LanguageSwitcher::widget(['sameRoute' => true]);
+        $this->assertStringContainsString('>Español<', $html);
+        $this->assertStringContainsString('>México<', $html, 'the second variant shows the part in brackets, not a second "Español"');
+        $this->assertSame(1, substr_count($html, '>Español<'));
+    }
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+## 2.10.0 (requires rapttor/legal ^2.7)
+- Five more languages for the legal pages and the screen texts: Swedish, Romanian, Indonesian, Vietnamese and Mexican Spanish (`es-MX`, its own texts); 22 languages. Flags for them in the language strip; two variants that would show the same word (Español, Español (México)) show the bracketed part instead ("México").
+
 ## 2.9.0 (requires rapttor/legal ^2.6)
 - **App-specific pages in the legal lists**: `Legal::$extraPages` (title and url per language, relative paths, route arrays or absolute http(s) URLs; `position`, `languages`), `Legal::links($lang)`, shown in the legal index, in `LegalLinks` (`extras`) and in a new list under each document (`showNav`). `legal/check` hints at incomplete entries. New message `index.title` ("Legal") in all languages.
 

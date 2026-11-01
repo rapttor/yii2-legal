@@ -41,7 +41,7 @@ final class LanguageSwitcher extends Widget
     /** @var array<string,string> language tag => flag emoji */
     public const FLAGS = [
         'en' => '🇬🇧', 'de' => '🇩🇪', 'fr' => '🇫🇷', 'es' => '🇪🇸',
-        'pt-BR' => '🇧🇷', 'it' => '🇮🇹', 'pl' => '🇵🇱', 'nl' => '🇳🇱', 'tr' => '🇹🇷', 'uk' => '🇺🇦', 'ru' => '🇷🇺', 'ar' => '🇸🇦', 'hi' => '🇮🇳',
+        'es-MX' => '🇲🇽', 'sv' => '🇸🇪', 'ro' => '🇷🇴', 'id' => '🇮🇩', 'vi' => '🇻🇳', 'pt-BR' => '🇧🇷', 'it' => '🇮🇹', 'pl' => '🇵🇱', 'nl' => '🇳🇱', 'tr' => '🇹🇷', 'uk' => '🇺🇦', 'ru' => '🇷🇺', 'ar' => '🇸🇦', 'hi' => '🇮🇳',
         'ja' => '🇯🇵', 'ko' => '🇰🇷', 'zh-Hans' => '🇨🇳',
     ];
     public array $options = ['class' => 'legal-languages'];
@@ -67,6 +67,13 @@ final class LanguageSwitcher extends Widget
         }
         $doc = $this->doc ?? $this->currentDocument();
         $items = '';
+        $shorts = [];
+        foreach ($list as $l) { // short names for the compact strip; two languages that would show the same word (Español, Español (México)) show the part in brackets instead
+            $full = (string)($this->labels[$l['tag']] ?? $l['name']);
+            $s = trim((string)preg_replace('/\s*\(.*\)/u', '', $full));
+            $shorts[$l['tag']] = [$s, preg_match('/\((.*)\)/u', $full, $m) ? $m[1] : $s];
+        }
+        $count = array_count_values(array_column($shorts, 0));
         foreach ($list as $l) {
             $has = $doc !== null && $legal->document($doc, $l['tag']) !== null && !$legal->document($doc, $l['tag'])['fallback'];
             $url = $this->sameRoute ? \yii\helpers\Url::current(['lang' => $l['tag']]) : ($doc !== null && $has ? $legal->url($doc, $l['tag']) : $this->indexUrl($legal, $l['tag']));
@@ -75,7 +82,8 @@ final class LanguageSwitcher extends Widget
             $mask = ($this->flags ?? $this->sameRoute) ? self::FLAG_MASKS[$l['tag']] ?? null : null;
             $attrs = ['hreflang' => $l['tag'], 'lang' => $l['tag'], 'rel' => 'alternate', 'title' => $name] + ($l['current'] ? ['aria-current' => 'true'] : []);
             if ($this->compact ?? $this->sameRoute) { // flag on top, short name in small type below: fits many languages in one row
-                $short = trim((string)preg_replace('/\s*\(.*\)/u', '', $name));
+                [$short, $inner] = $shorts[$l['tag']];
+                $short = $count[$short] > 1 && $inner !== $short && $l['tag'] !== array_key_first(array_filter($shorts, static fn(array $x): bool => $x[0] === $short)) ? $inner : $short;
                 $attrs['style'] = 'display:flex;flex-direction:column;align-items:center;gap:.1rem;text-decoration:none;min-width:3rem;line-height:1.1;'
                     . ($l['current'] ? 'font-weight:700;border-bottom:2px solid currentColor;padding-bottom:.15rem' : 'opacity:.8');
                 $a = Html::a('<span aria-hidden="true" style="font-size:1.5rem;line-height:1.2">' . ($mask !== null ? self::maskIcon($mask, '1.9rem', '1.27rem') : ($flagChar !== '' ? $flagChar : '&#9679;')) . '</span><span style="font-size:.65rem;white-space:nowrap">' . Html::encode($short) . '</span>', $url, $attrs);
